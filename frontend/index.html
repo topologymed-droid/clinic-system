@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>雅言牙醫診所 — 約診系統</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────────────────────── -->
+<header class="header">
+  <div class="header-left">
+    <span class="header-icon">🦷</span>
+    <div>
+      <h1>雅言牙醫診所</h1>
+      <div class="header-sub">診所約診管理系統</div>
+    </div>
+  </div>
+  <div class="header-right" id="todayDisplay"></div>
+</header>
+
+<!-- ── Tab Bar ─────────────────────────────────────────────────────────────── -->
+<nav class="tab-bar">
+  <button class="tab active" id="tab-form"     onclick="switchTab('form')">📋 新增約診</button>
+  <button class="tab"        id="tab-calendar" onclick="switchTab('calendar')">📅 月曆檢視</button>
+  <button class="tab"        id="tab-search"   onclick="switchTab('search')">🔍 查詢患者</button>
+</nav>
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<!--  TAB: 新增約診                                                             -->
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<div id="view-form" class="tab-view">
+<div class="container">
+
+  <!-- ─ Form Panel ─────────────────────────────────────────────────────────── -->
+  <section class="card form-panel">
+    <div class="card-title"><span class="icon">📋</span> 新增約診</div>
+    <form id="appointmentForm" novalidate>
+
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="field-label" for="date">日期</label>
+          <input type="date" id="date" required />
+        </div>
+        <div class="form-group">
+          <label class="field-label" for="doctor">主治醫師</label>
+          <select id="doctor" required>
+            <option value="">請選擇醫師</option>
+          </select>
+          <div id="doctorNote" class="doctor-note-badge" style="display:none;">
+            <span class="note-icon">📋</span><span id="doctorNoteText"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">看診時間</label>
+        <div class="time-row">
+          <div>
+            <label class="field-label" style="margin-bottom:5px;font-size:11px;">開始</label>
+            <input type="text" id="startTime" list="startTimeList" placeholder="09:00" maxlength="5" autocomplete="off" required />
+            <datalist id="startTimeList"></datalist>
+          </div>
+          <div class="time-arrow">→</div>
+          <div>
+            <label class="field-label" style="margin-bottom:5px;font-size:11px;">結束</label>
+            <input type="text" id="endTime" list="endTimeList" placeholder="09:30" maxlength="5" autocomplete="off" required />
+            <datalist id="endTimeList"></datalist>
+          </div>
+        </div>
+        <div id="durationBadge" class="time-duration-badge" style="display:none;"></div>
+      </div>
+
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="field-label" for="patientName">病患姓名</label>
+          <input type="text" id="patientName" placeholder="請輸入姓名" required />
+        </div>
+        <div class="form-group">
+          <label class="field-label" for="phone">聯絡電話 <span class="optional">（選填）</span></label>
+          <input type="tel" id="phone" placeholder="09xx-xxxxxx" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label">就診類型</label>
+        <div class="radio-group">
+          <label class="radio-label">
+            <input type="radio" name="visitType" value="初診" checked />
+            <span class="radio-box">初診</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="visitType" value="複診" />
+            <span class="radio-box">複診</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label" for="complaint">主訴 / 症狀</label>
+        <textarea id="complaint" rows="3" placeholder="請描述主訴或症狀…" required></textarea>
+      </div>
+
+      <button type="submit" class="btn-primary btn-submit" id="submitBtn">
+        📅 確認約診並加入 Google 日曆
+      </button>
+    </form>
+  </section>
+
+  <!-- ─ Side Panel ─────────────────────────────────────────────────────────── -->
+  <aside class="side-panel">
+    <section class="card appointments-card">
+      <div class="card-header-row">
+        <div class="card-title"><span class="icon">🗓</span> <span id="apptCardTitle">今日約診</span></div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button class="btn-icon" onclick="loadAppointments()" title="重新整理">↻</button>
+          <button class="btn-add-appt" onclick="focusForm()">＋ 新增</button>
+        </div>
+      </div>
+      <div id="appointmentsList" class="appointments-list">
+        <p class="placeholder-text">載入中…</p>
+      </div>
+    </section>
+
+    <section class="card doctors-card">
+      <div class="card-title"><span class="icon">👨‍⚕️</span> 醫師管理</div>
+      <div id="doctorsList" class="doctors-list"></div>
+      <div class="add-doctor-row">
+        <input type="text" id="newDoctorName" placeholder="新增醫師名稱（例：王小明醫師）" />
+        <button class="btn-success" onclick="addDoctor()">新增</button>
+      </div>
+    </section>
+  </aside>
+
+</div>
+</div><!-- /view-form -->
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<!--  TAB: 月曆                                                                 -->
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<div id="view-calendar" class="tab-view hidden">
+<div class="cal-layout">
+
+  <!-- 月曆主體 -->
+  <div class="cal-main card">
+    <div class="cal-nav">
+      <button class="btn-nav" id="calPrev" onclick="calNavPrev()">‹</button>
+      <h2 class="cal-month-title" id="calMonthTitle"></h2>
+      <button class="btn-nav" id="calNext" onclick="calNavNext()">›</button>
+      <div class="cal-view-toggle">
+        <button class="view-btn active" id="btn-year"  onclick="setCalView('year')">年</button>
+        <button class="view-btn"        id="btn-month" onclick="setCalView('month')">月</button>
+      </div>
+    </div>
+
+    <!-- 月視圖 -->
+    <div id="calMonthView">
+      <div class="cal-weekdays">
+        <div>日</div><div>一</div><div>二</div><div>三</div>
+        <div>四</div><div>五</div><div>六</div>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+
+    <!-- 年視圖 -->
+    <div id="calYearView" class="hidden">
+      <div class="year-grid" id="yearGrid"></div>
+    </div>
+
+    <!-- 醫師圖例 -->
+    <div class="cal-legend">
+      <span class="chip chip-zhang">Dr.張</span>
+      <span class="chip chip-hu">Dr.胡</span>
+      <span class="chip chip-su">Dr.蘇</span>
+      <span class="chip chip-deng">Dr.鄧</span>
+      <span class="chip chip-np" style="margin-left:8px;">NP 初診</span>
+    </div>
+  </div>
+
+  <!-- 選取日期的詳細約診 -->
+  <div class="cal-detail card">
+    <div class="card-header-row">
+      <div class="card-title"><span class="icon">📋</span> <span id="calDetailTitle">點選日期查看約診</span></div>
+      <button class="btn-add-appt" id="calAddBtn" style="display:none;" onclick="goAddForDate()">＋ 新增</button>
+    </div>
+    <div id="calDetailList" class="appointments-list">
+      <p class="placeholder-text">請點選左方日曆的日期</p>
+    </div>
+  </div>
+
+</div>
+</div><!-- /view-calendar -->
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<!--  TAB: 查詢患者                                                              -->
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<div id="view-search" class="tab-view hidden">
+<div class="search-layout">
+
+  <section class="card search-card">
+    <div class="card-title"><span class="icon">🔍</span> 查詢患者</div>
+
+    <div class="search-input-row">
+      <input type="text" id="searchInput" placeholder="輸入患者姓名（可輸入部分）…" autocomplete="off" />
+      <button class="btn-primary search-btn" onclick="doSearch()">搜尋</button>
+    </div>
+    <div class="search-range-hint">搜尋範圍：過去 12 個月 ＋ 未來 6 個月</div>
+
+    <div id="searchResults" class="search-results">
+      <p class="placeholder-text">輸入姓名後按搜尋</p>
+    </div>
+  </section>
+
+</div>
+</div><!-- /view-search -->
+
+<!-- ── Modal (成功 / 確認) ──────────────────────────────────────────────────── -->
+<div class="modal-backdrop" id="successModal">
+  <div class="modal-box"></div>
+</div>
+
+<!-- ── Toast ────────────────────────────────────────────────────────────────── -->
+<div class="toast" id="toast"></div>
+
+<!-- ── Undo Toast ───────────────────────────────────────────────────────────── -->
+<div class="undo-toast" id="undoToast">
+  <div class="undo-msg">
+    <span>🗑 約診已取消</span>
+  </div>
+  <div class="undo-actions">
+    <div class="undo-bar"><div class="undo-bar-fill" id="undoBarFill"></div></div>
+    <button class="btn-undo" id="undoBtn" onclick="undoDelete()">復原</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
