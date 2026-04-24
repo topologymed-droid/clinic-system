@@ -96,21 +96,42 @@ def save_doctors(doctors):
 # ─── Google Calendar Helper ───────────────────────────────────────────────────
 def get_calendar_service():
     creds = None
+
+    # 先嘗試讀取 token.json 檔案
     if os.path.exists(TOKEN_FILE):
         creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+    # 若無檔案，從環境變數讀取（Railway 雲端部署用）
+    elif os.environ.get('GOOGLE_TOKEN'):
+        creds = Credentials.from_authorized_user_info(
+            json.loads(os.environ['GOOGLE_TOKEN']), SCOPES
+        )
+
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
+            # 更新後存檔（本地環境用）
+            try:
+                with open(TOKEN_FILE, 'w') as f:
+                    f.write(creds.to_json())
+            except Exception:
+                pass
         else:
+            # 若無 credentials.json，從環境變數寫入暫存
             if not os.path.exists(CREDENTIALS_FILE):
-                raise HTTPException(
-                    status_code=500,
-                    detail="找不到 credentials.json，請先依照說明完成 Google API 設定"
-                )
+                creds_env = os.environ.get('GOOGLE_CREDENTIALS')
+                if creds_env:
+                    with open(CREDENTIALS_FILE, 'w') as f:
+                        f.write(creds_env)
+                else:
+                    raise HTTPException(
+                        status_code=500,
+                        detail="找不到 credentials.json，請先依照說明完成 Google API 設定"
+                    )
             flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
             creds = flow.run_local_server(port=0, open_browser=True)
-        with open(TOKEN_FILE, 'w') as f:
-            f.write(creds.to_json())
+            with open(TOKEN_FILE, 'w') as f:
+                f.write(creds.to_json())
+
     return build('calendar', 'v3', credentials=creds)
 
 # ─── Models ───────────────────────────────────────────────────────────────────
