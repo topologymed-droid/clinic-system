@@ -363,7 +363,7 @@ function renderAppointments(events, container) {
     const timeLabel = end ? `${start} – ${end}` : start;
     const desc      = (ev.description || '').replace(/\n/g, '  ·  ');
     const summary  = ev.summary || '';
-    const doc      = getDocFromSummary(summary);
+    const doc      = getDocFromSummary(summary, ev);
     const col      = getDocColor(doc);
     const drLabel  = getDocLabel(doc);
     return `
@@ -404,7 +404,13 @@ const DOCTOR_PALETTE = [
 ];
 
 // 由事件摘要找到對應醫師物件（動態比對 doctorsList 中所有醫師姓氏）
-function getDocFromSummary(summary) {
+// ev 為完整事件物件（可選），用於讀取 _isSuCalendar 旗標
+function getDocFromSummary(summary, ev) {
+  // 若是蘇醫師日曆的活動，直接返回包含「蘇」的醫師
+  if (ev?._isSuCalendar) {
+    return doctorsList.find(d => d.name.includes('蘇')) || null;
+  }
+  // 依 Dr.姓 格式比對
   for (const doc of doctorsList) {
     const surname = doc.name.replace('醫師','').trim()[0];
     if (new RegExp(`dr[.．]?${surname}`, 'i').test(summary) ||
@@ -412,16 +418,19 @@ function getDocFromSummary(summary) {
       return doc;
     }
   }
-  // fallback：找無前綴的醫師（例：蘇醫師）→ 取 colorIndex 最小的無前綴醫師
-  return doctorsList.find(d => d.noPrefix) || doctorsList[2] || doctorsList[0] || null;
+  // CALENDAR_MAIN 無法比對到醫師 → 不亂猜，回傳 null（顯示中性灰色）
+  return null;
 }
 
+const DOC_UNKNOWN_COLOR = { bg: '#9a9a9a', light: '#f4f4f4' }; // 灰色：找不到醫師時用
+
 function getDocColor(doc) {
+  if (!doc) return DOC_UNKNOWN_COLOR;
   const idx = (doc?.colorIndex ?? 0);
   return DOCTOR_PALETTE[idx % DOCTOR_PALETTE.length];
 }
 function getDocLabel(doc) {
-  if (!doc) return 'Dr.?';
+  if (!doc) return '?';
   const surname = doc.name.replace('醫師','').trim()[0];
   return `Dr.${surname}`;
 }
@@ -678,7 +687,7 @@ async function doSearch() {
       const timeLabel = start && end ? `${start} – ${end}` : start;
       const summary   = ev.summary || '';
       const desc      = (ev.description || '').replace(/\n/g, '  ·  ');
-      const doc       = getDocFromSummary(summary);
+      const doc       = getDocFromSummary(summary, ev);
       const col       = getDocColor(doc);
       const drLabel   = getDocLabel(doc);
 
@@ -841,7 +850,7 @@ async function renderYearCalendar() {
         evs.slice(0, maxDots).forEach(ev => {
           const dot = document.createElement('div');
           dot.className = 'dot';
-          dot.style.background = getDocColor(getDocFromSummary(ev.summary || '')).bg;
+          dot.style.background = getDocColor(getDocFromSummary(ev.summary || '', ev)).bg;
           dotsEl.appendChild(dot);
         });
         cell.appendChild(dotsEl);
@@ -930,7 +939,7 @@ function buildCalGrid(firstDay, lastDay, eventsMap) {
     evs.slice(0, maxShow).forEach(ev => {
       const chip = document.createElement('span');
       chip.className = 'chip';
-      const _col = getDocColor(getDocFromSummary(ev.summary || ''));
+      const _col = getDocColor(getDocFromSummary(ev.summary || '', ev));
       chip.style.background = _col.bg;
       chip.style.color = '#fff';
       chip.textContent = chipLabel(ev);

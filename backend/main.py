@@ -294,7 +294,9 @@ def get_appointments(date: str):
                 singleEvents=True,
                 orderBy='startTime',
             ).execute()
-            all_events.extend(result.get('items', []))
+            for ev in result.get('items', []):
+                ev['_isSuCalendar'] = (cal_id == CALENDAR_SU)
+                all_events.append(ev)
 
         # 依開始時間排序
         all_events.sort(key=lambda e: e.get('start', {}).get('dateTime', e.get('start', {}).get('date', '')))
@@ -322,7 +324,9 @@ def get_appointments_range(start: str, end: str):
                 singleEvents=True,
                 orderBy='startTime',
             ).execute()
-            all_events.extend(result.get('items', []))
+            for ev in result.get('items', []):
+                ev['_isSuCalendar'] = (cal_id == CALENDAR_SU)
+                all_events.append(ev)
 
         all_events.sort(key=lambda e: e.get('start', {}).get('dateTime', e.get('start', {}).get('date', '')))
         return all_events
@@ -354,7 +358,9 @@ def search_appointments(q: str):
                     pageToken=page_token,
                     maxResults=500,
                 ).execute()
-                all_events.extend(result.get('items', []))
+                for ev in result.get('items', []):
+                    ev['_isSuCalendar'] = (cal_id == CALENDAR_SU)
+                    all_events.append(ev)
                 page_token = result.get('nextPageToken')
                 if not page_token:
                     break
