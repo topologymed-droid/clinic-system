@@ -1236,9 +1236,9 @@ textarea { resize: vertical; min-height: 76px; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   RWD — 手機 (≤640px)
+   RWD — 手機 (≤768px)
 ══════════════════════════════════════════════════════════════════════════ */
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   /* Header */
   .header {
     padding: 12px 16px;
@@ -1259,23 +1259,26 @@ textarea { resize: vertical; min-height: 76px; }
     gap: 3px;
   }
   .tab {
-    padding: 8px 12px;
+    padding: 8px 10px;
     font-size: 12px;
     flex: 1;
     text-align: center;
   }
 
-  /* Main layout */
+  /* ── 主要版型：全部改單欄 ─────────────────────────── */
   .container {
-    grid-template-columns: 1fr;
+    display: flex !important;
+    flex-direction: column !important;
     margin: 12px auto;
     padding: 0 12px 30px;
     gap: 14px;
   }
+  .form-panel { width: 100%; }
   .side-panel {
-    display: flex;
-    flex-direction: column;
+    display: flex !important;
+    flex-direction: column !important;
     gap: 14px;
+    width: 100%;
   }
 
   /* Cards */
@@ -1287,7 +1290,7 @@ textarea { resize: vertical; min-height: 76px; }
   .form-group { margin-bottom: 14px; }
   .time-row { gap: 6px; }
 
-  /* Appointments card */
+  /* Appointments */
   .appointments-card { max-height: none; }
   .appt-item { gap: 7px; padding: 9px 10px; }
   .appt-time-col { min-width: 66px; }
@@ -1299,14 +1302,12 @@ textarea { resize: vertical; min-height: 76px; }
 
   /* Calendar */
   .cal-layout {
-    grid-template-columns: 1fr;
+    display: flex !important;
+    flex-direction: column !important;
     padding: 10px 12px 0;
     gap: 14px;
   }
-  .cal-detail {
-    position: static;
-    max-height: none;
-  }
+  .cal-detail { position: static; max-height: none; }
   .year-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .cal-day { min-height: 70px; padding: 4px; }
   .cal-day-num { font-size: 11px; width: 20px; height: 20px; }
@@ -1324,24 +1325,18 @@ textarea { resize: vertical; min-height: 76px; }
   }
   .modal-box h3 { font-size: 16px; }
   .modal-box p  { font-size: 13px; }
-
-  /* Edit box in modal */
   .edit-box h4 { font-size: 14px; }
   .edit-summary { font-size: 12px; }
 
   /* Search */
-  .search-layout {
-    padding: 12px 12px 0;
-  }
+  .search-layout { padding: 12px 12px 0; }
   .search-input-row input { font-size: 14px; }
   .search-btn { padding: 11px 16px; }
 
   /* Booker chips */
   .booker-chip { font-size: 12px; padding: 5px 10px 5px 13px; }
 
-  /* Undo toast */
-  .undo-toast { min-width: 260px; }
-
   /* Toast */
+  .undo-toast { min-width: 260px; }
   .toast { bottom: 16px; right: 16px; left: 16px; max-width: none; font-size: 13px; }
 }
