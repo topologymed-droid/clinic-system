@@ -1210,3 +1210,138 @@ textarea { resize: vertical; min-height: 76px; }
   color: var(--teal-dark);
   font-weight: 700;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   RWD — 平板 (≤960px)
+══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 960px) {
+  .container {
+    grid-template-columns: 1fr;
+  }
+  .side-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .cal-layout {
+    grid-template-columns: 1fr;
+  }
+  .cal-detail {
+    position: static;
+    max-height: none;
+  }
+  .year-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   RWD — 手機 (≤640px)
+══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  /* Header */
+  .header {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .header h1 { font-size: 16px; }
+  .header-right {
+    font-size: 11px;
+    padding: 4px 10px;
+    width: 100%;
+    text-align: center;
+  }
+
+  /* Tab bar */
+  .tab-bar {
+    padding: 8px 12px 0;
+    gap: 3px;
+  }
+  .tab {
+    padding: 8px 12px;
+    font-size: 12px;
+    flex: 1;
+    text-align: center;
+  }
+
+  /* Main layout */
+  .container {
+    grid-template-columns: 1fr;
+    margin: 12px auto;
+    padding: 0 12px 30px;
+    gap: 14px;
+  }
+  .side-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* Cards */
+  .card { padding: 16px 14px; }
+  .card-title { font-size: 13px; }
+
+  /* Form */
+  .form-row-2 { grid-template-columns: 1fr; gap: 0; }
+  .form-group { margin-bottom: 14px; }
+  .time-row { gap: 6px; }
+
+  /* Appointments card */
+  .appointments-card { max-height: none; }
+  .appt-item { gap: 7px; padding: 9px 10px; }
+  .appt-time-col { min-width: 66px; }
+  .appt-time { font-size: 11px; min-width: 62px; }
+  .appt-title { font-size: 12px; }
+  .appt-meta { font-size: 10px; }
+  .appt-actions { gap: 3px; }
+  .btn-edit-sm, .btn-danger-sm { padding: 3px 7px; font-size: 10px; }
+
+  /* Calendar */
+  .cal-layout {
+    grid-template-columns: 1fr;
+    padding: 10px 12px 0;
+    gap: 14px;
+  }
+  .cal-detail {
+    position: static;
+    max-height: none;
+  }
+  .year-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .cal-day { min-height: 70px; padding: 4px; }
+  .cal-day-num { font-size: 11px; width: 20px; height: 20px; }
+  .chip { font-size: 9px; padding: 1px 5px; }
+  .cal-nav { margin-bottom: 10px; }
+  .cal-month-title { font-size: 15px; }
+  .cal-legend { gap: 5px; margin-top: 10px; }
+
+  /* Modal */
+  .modal-box {
+    padding: 24px 18px;
+    max-width: 95vw;
+    width: 95vw;
+    border-radius: 14px;
+  }
+  .modal-box h3 { font-size: 16px; }
+  .modal-box p  { font-size: 13px; }
+
+  /* Edit box in modal */
+  .edit-box h4 { font-size: 14px; }
+  .edit-summary { font-size: 12px; }
+
+  /* Search */
+  .search-layout {
+    padding: 12px 12px 0;
+  }
+  .search-input-row input { font-size: 14px; }
+  .search-btn { padding: 11px 16px; }
+
+  /* Booker chips */
+  .booker-chip { font-size: 12px; padding: 5px 10px 5px 13px; }
+
+  /* Undo toast */
+  .undo-toast { min-width: 260px; }
+
+  /* Toast */
+  .toast { bottom: 16px; right: 16px; left: 16px; max-width: none; font-size: 13px; }
+}
