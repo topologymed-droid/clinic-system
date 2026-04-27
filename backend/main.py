@@ -268,7 +268,13 @@ def delete_booker(booker_id: str):
     save_bookers(bookers)
     return {"status": "ok"}
 
-# ─── Patient Lookup Route ─────────────────────────────────────────────────────
+# ─── Patient Routes ───────────────────────────────────────────────────────────
+@app.get("/api/patients")
+def get_all_patients():
+    """回傳所有已記憶的患者姓名清單"""
+    patients = load_patients()
+    return sorted(patients.keys())
+
 @app.get("/api/patients/lookup")
 def lookup_patient(name: str):
     patients = load_patients()

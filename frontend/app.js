@@ -5,6 +5,7 @@ const API = ''; // 自動使用當前網域，Mac localhost 或 ngrok 都能運�
 let doctorsList     = [];
 let bookersList     = [];
 let selectedBooker  = '';
+let allPatientNames = [];
 let calYear         = new Date().getFullYear();
 let calMonth        = new Date().getMonth(); // 0-indexed
 let calEvents       = {};  // { 'YYYY-MM-DD': [events] }
@@ -17,6 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
   buildTimeSelects();
   fetchDoctors();
   fetchBookers();
+  fetchPatientNames();
+  initPatientAutocomplete();
   loadAppointments();
 
   document.getElementById('appointmentForm').addEventListener('submit', handleSubmit);
@@ -286,6 +289,73 @@ async function deleteDoctor(id, name) {
     await fetch(`${API}/api/doctors/${id}`, { method: 'DELETE' });
     await fetchDoctors();
   } catch { showToast('移除失敗', true); }
+}
+
+// ─── Patient Autocomplete ─────────────────────────────────────────────────────
+async function fetchPatientNames() {
+  try {
+    const res = await fetch(`${API}/api/patients`);
+    allPatientNames = await res.json();
+  } catch {}
+}
+
+function initPatientAutocomplete() {
+  const input = document.getElementById('patientName');
+  if (!input) return;
+
+  // 建立下拉容器
+  const wrap = input.parentNode;
+  wrap.style.position = 'relative';
+  const dropdown = document.createElement('div');
+  dropdown.id = 'patientAutocomplete';
+  dropdown.className = 'autocomplete-dropdown';
+  wrap.appendChild(dropdown);
+
+  function showDropdown(q) {
+    if (!q) { dropdown.style.display = 'none'; return; }
+    const matches = allPatientNames
+      .filter(n => n.includes(q))
+      .slice(0, 8);
+    if (!matches.length) { dropdown.style.display = 'none'; return; }
+    dropdown.innerHTML = matches.map(name => {
+      const hi = name.replace(q, `<mark>${escHtml(q)}</mark>`);
+      return `<div class="autocomplete-item" onmousedown="selectPatientName('${escHtml(name)}')">${hi}</div>`;
+    }).join('');
+    dropdown.style.display = 'block';
+  }
+
+  input.addEventListener('input', () => showDropdown(input.value.trim()));
+  input.addEventListener('focus', () => showDropdown(input.value.trim()));
+  input.addEventListener('blur',  () => setTimeout(() => { dropdown.style.display = 'none'; }, 200));
+
+  // 鍵盤上下選擇
+  input.addEventListener('keydown', e => {
+    const items = dropdown.querySelectorAll('.autocomplete-item');
+    if (!items.length) return;
+    const active = dropdown.querySelector('.autocomplete-item.active');
+    let idx = Array.from(items).indexOf(active);
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (active) active.classList.remove('active');
+      items[(idx + 1) % items.length].classList.add('active');
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (active) active.classList.remove('active');
+      items[(idx - 1 + items.length) % items.length].classList.add('active');
+    } else if (e.key === 'Enter') {
+      if (active) { e.preventDefault(); active.dispatchEvent(new Event('mousedown')); }
+    } else if (e.key === 'Escape') {
+      dropdown.style.display = 'none';
+    }
+  });
+}
+
+function selectPatientName(name) {
+  const input = document.getElementById('patientName');
+  if (input) input.value = name;
+  const dropdown = document.getElementById('patientAutocomplete');
+  if (dropdown) dropdown.style.display = 'none';
+  lookupPatientDoctor(name);
 }
 
 // ─── Patient Doctor Hint ──────────────────────────────────────────────────────
@@ -726,6 +796,7 @@ async function handleSubmit(e) {
     showSuccess(payload);
     resetForm();
     await loadAppointments();
+    fetchPatientNames(); // 更新患者自動完成名單
   } catch { showToast('無法連接伺服器', true); }
   finally { btn.disabled = false; btn.textContent = '📅 確認約診並加入 Google 日曆'; }
 }
