@@ -654,18 +654,23 @@ function getEventMeta(ev) {
   const vt = (desc.match(/類型：(.+)/) || [])[1]?.trim() || '複診';
   let cp = (desc.match(/主訴：(.+)/) || [])[1]?.trim() || '';
 
-  // description 沒有「主訴：」→ 從 summary 標題解析（去掉約診者前綴、NP、Dr.X、患者姓名）
+  // fallback 1：description 有內容但沒有結構化格式（舊事件），直接當主訴用
+  if (!cp && desc && !desc.includes('患者：') && !desc.includes('電話：')) {
+    cp = desc.trim();
+  }
+
+  // fallback 2：從 summary 標題解析（去掉約診者前綴、NP、Dr.X、患者姓名）
   if (!cp) {
     let s = (ev.summary || '').trim();
-    // 去掉 "約診者: " 前綴
-    if (/^.{1,6}:\s/.test(s)) s = s.replace(/^.+?:\s*/, '');
+    // 去掉 "約診者: " 或 "約診者： " 前綴（半形 / 全形冒號皆支援）
+    s = s.replace(/^[^:\uff1a]{1,8}[:\uff1a]\s*/, '');
     // 去掉 NP 前綴
     if (s.startsWith('NP ')) s = s.slice(3).trim();
-    // 去掉 Dr.X 前綴
-    s = s.replace(/^Dr\.\S+\s*/, '').trim();
-    // 去掉第一個詞（患者姓名），剩下的就是主訴
-    const spaceIdx = s.search(/\s/);
-    if (spaceIdx > 0) cp = s.slice(spaceIdx).trim();
+    // 去掉 Dr.姓 前綴
+    s = s.replace(/^Dr[.\uff0e]\S+\s*/, '').trim();
+    // 去掉第一個詞（患者姓名 2~4 字），剩下的就是主訴
+    const m = s.match(/^\S{2,4}\s+([\s\S]+)/);
+    if (m) cp = m[1].trim();
   }
 
   return { visit_type: vt, complaint: cp };
