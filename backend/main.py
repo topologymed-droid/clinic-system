@@ -511,12 +511,27 @@ def update_appointment(event_id: str, update: AppointmentUpdate):
         if update.doctor:
             new_cal_id = get_calendar_id(update.doctor)
             if update.patient_name:
+                # 保留原本 summary 中的約診者前綴（例：哲毅:）
+                existing_booker = update.booker or ''
+                if not existing_booker:
+                    existing_summary = ev.get('summary', '')
+                    if ': ' in existing_summary[:15]:
+                        existing_booker = existing_summary.split(': ', 1)[0]
+
+                # 使用 description 中的完整主訴（若 update.complaint 未傳或為空）
+                complaint = update.complaint or ''
+                if not complaint:
+                    desc = ev.get('description', '') or ''
+                    m = re.search(r'主訴：([^\n]+)', desc)
+                    if m:
+                        complaint = m.group(1).strip()
+
                 ev['summary'] = event_summary(
                     update.doctor,
                     update.patient_name,
                     update.visit_type or '複診',
-                    update.complaint or '',
-                    update.booker or ''
+                    complaint,
+                    existing_booker
                 )
                 # 更新患者記憶
                 update_patient_doctor(update.patient_name, update.doctor)
