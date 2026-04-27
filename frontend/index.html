@@ -102,6 +102,15 @@
         <textarea id="complaint" rows="3" placeholder="請描述主訴或症狀…" required></textarea>
       </div>
 
+      <div class="form-group">
+        <label class="field-label">約診者</label>
+        <div class="booker-row" id="bookerChips"></div>
+        <div class="add-booker-row">
+          <input type="text" id="newBookerName" placeholder="新增約診者名稱" maxlength="10" />
+          <button type="button" class="btn-success" onclick="addBooker()">新增</button>
+        </div>
+      </div>
+
       <button type="submit" class="btn-primary btn-submit" id="submitBtn">
         📅 確認約診並加入 Google 日曆
       </button>

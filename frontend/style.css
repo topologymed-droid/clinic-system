@@ -1045,3 +1045,53 @@ textarea { resize: vertical; min-height: 76px; }
   color: var(--text-main);
   background: var(--warm-bg);
 }
+
+/* ─── Booker Chips ───────────────────────────────────────────────────────────── */
+.booker-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.booker-chip {
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 2px solid var(--warm-border);
+  background: var(--warm-card);
+  color: var(--text-sub);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .18s;
+  user-select: none;
+}
+.booker-chip:hover {
+  border-color: var(--teal);
+  color: var(--teal-dark);
+  background: var(--teal-light);
+}
+.booker-chip.active {
+  background: var(--teal-dark);
+  border-color: var(--teal-dark);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(53,122,111,.3);
+}
+.add-booker-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.add-booker-row input {
+  flex: 1;
+  padding: 7px 12px;
+  border: 1.5px solid var(--warm-border);
+  border-radius: 9px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text-main);
+  background: var(--warm-bg);
+}
+.add-booker-row input:focus {
+  outline: none;
+  border-color: var(--teal);
+}

@@ -18,6 +18,7 @@ BASE_DIR        = os.path.dirname(os.path.abspath(__file__))
 FRONTEND_DIR    = os.path.join(BASE_DIR, '..', 'frontend')
 DOCTORS_FILE     = os.path.join(BASE_DIR, 'doctors.json')
 HISTORY_FILE     = os.path.join(BASE_DIR, 'history.json')
+BOOKERS_FILE     = os.path.join(BASE_DIR, 'bookers.json')
 TOKEN_FILE       = os.path.join(BASE_DIR, 'token.json')
 CREDENTIALS_FILE = os.path.join(BASE_DIR, 'credentials.json')
 
@@ -30,12 +31,14 @@ CALENDAR_SU   = 'd8893eed332dce19965d2f7b525b5bced33607830c13cee746bceca26322a98
 def get_calendar_id(doctor: str) -> str:
     return CALENDAR_SU if '蘇' in doctor else CALENDAR_MAIN
 
-def event_summary(doctor: str, patient: str, visit_type: str, complaint: str) -> str:
+def event_summary(doctor: str, patient: str, visit_type: str, complaint: str, booker: str = '') -> str:
     np = 'NP ' if visit_type == '初診' else ''
     if '蘇' in doctor:
-        return f"{np}{patient} {complaint}"
-    surname = doctor.replace('醫師', '').strip()[0]
-    return f"{np}Dr.{surname} {patient} {complaint}"
+        base = f"{np}{patient} {complaint}"
+    else:
+        surname = doctor.replace('醫師', '').strip()[0]
+        base = f"{np}Dr.{surname} {patient} {complaint}"
+    return f"{booker}: {base}" if booker else base
 
 # ─── App ──────────────────────────────────────────────────────────────────────
 app = FastAPI(title="診所約診系統")
@@ -46,6 +49,24 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ─── Default Bookers ──────────────────────────────────────────────────────────
+DEFAULT_BOOKERS = [
+    {"id": "1", "name": "哲毅"},
+    {"id": "2", "name": "姎姎"},
+    {"id": "3", "name": "晨晉"},
+]
+
+def load_bookers():
+    if not os.path.exists(BOOKERS_FILE):
+        save_bookers(DEFAULT_BOOKERS)
+        return DEFAULT_BOOKERS
+    with open(BOOKERS_FILE, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+def save_bookers(bookers):
+    with open(BOOKERS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(bookers, f, ensure_ascii=False, indent=2)
 
 # ─── Default Doctors ──────────────────────────────────────────────────────────
 DEFAULT_DOCTORS = [
@@ -144,6 +165,7 @@ class AppointmentCreate(BaseModel):
     end_time: str    # HH:MM
     complaint: str
     visit_type: str  # 初診 | 複診
+    booker: Optional[str] = None  # 約診者（例：哲毅）
 
 class AppointmentUpdate(BaseModel):
     date: str        # YYYY-MM-DD
@@ -196,6 +218,31 @@ def delete_doctor(doctor_id: str):
     save_doctors(doctors)
     return {"status": "ok"}
 
+# ─── Booker Routes ────────────────────────────────────────────────────────────
+@app.get("/api/bookers")
+def get_bookers():
+    return load_bookers()
+
+@app.post("/api/bookers")
+def add_booker(body: dict):
+    name = body.get('name', '').strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="名稱不能為空")
+    bookers = load_bookers()
+    existing_ids = [int(b['id']) for b in bookers if b['id'].isdigit()]
+    new_id = str(max(existing_ids, default=0) + 1)
+    new_booker = {"id": new_id, "name": name}
+    bookers.append(new_booker)
+    save_bookers(bookers)
+    return new_booker
+
+@app.delete("/api/bookers/{booker_id}")
+def delete_booker(booker_id: str):
+    bookers = load_bookers()
+    bookers = [b for b in bookers if b['id'] != booker_id]
+    save_bookers(bookers)
+    return {"status": "ok"}
+
 # ─── Appointment Routes ───────────────────────────────────────────────────────
 @app.post("/api/appointments")
 def create_appointment(appt: AppointmentCreate):
@@ -206,7 +253,7 @@ def create_appointment(appt: AppointmentCreate):
         end_dt   = datetime.strptime(f"{appt.date} {appt.end_time}",   "%Y-%m-%d %H:%M")
 
         event = {
-            'summary': event_summary(appt.doctor, appt.patient_name, appt.visit_type, appt.complaint),
+            'summary': event_summary(appt.doctor, appt.patient_name, appt.visit_type, appt.complaint, appt.booker or ''),
             'description': (
                 f"電話：{appt.phone or '未提供'}\n"
                 f"主訴：{appt.complaint}\n"

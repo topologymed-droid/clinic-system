@@ -3,6 +3,8 @@
 const API = ''; // 自動使用當前網域，Mac localhost 或 ngrok 都能運作
 
 let doctorsList     = [];
+let bookersList     = [];
+let selectedBooker  = '';
 let calYear         = new Date().getFullYear();
 let calMonth        = new Date().getMonth(); // 0-indexed
 let calEvents       = {};  // { 'YYYY-MM-DD': [events] }
@@ -14,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initDate();
   buildTimeSelects();
   fetchDoctors();
+  fetchBookers();
   loadAppointments();
 
   document.getElementById('appointmentForm').addEventListener('submit', handleSubmit);
@@ -22,6 +25,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('newDoctorName').addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); addDoctor(); }
+  });
+  document.getElementById('newBookerName').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); addBooker(); }
   });
   document.getElementById('startTime').addEventListener('change', updateEndOptions);
   document.getElementById('endTime').addEventListener('change', updateDurationBadge);
@@ -266,6 +272,57 @@ async function deleteDoctor(id, name) {
   try {
     await fetch(`${API}/api/doctors/${id}`, { method: 'DELETE' });
     await fetchDoctors();
+  } catch { showToast('移除失敗', true); }
+}
+
+// ─── Bookers ──────────────────────────────────────────────────────────────────
+async function fetchBookers() {
+  try {
+    const res = await fetch(`${API}/api/bookers`);
+    bookersList = await res.json();
+    renderBookerChips();
+  } catch {}
+}
+
+function renderBookerChips() {
+  const container = document.getElementById('bookerChips');
+  if (!container) return;
+  container.innerHTML = '';
+  bookersList.forEach(b => {
+    const chip = document.createElement('div');
+    chip.className = 'booker-chip' + (selectedBooker === b.name ? ' active' : '');
+    chip.textContent = b.name;
+    chip.onclick = () => {
+      selectedBooker = selectedBooker === b.name ? '' : b.name;
+      renderBookerChips();
+    };
+    // 右鍵長按刪除
+    chip.ondblclick = () => deleteBooker(b.id, b.name);
+    container.appendChild(chip);
+  });
+}
+
+async function addBooker() {
+  const input = document.getElementById('newBookerName');
+  const name  = input.value.trim();
+  if (!name) return;
+  try {
+    const res = await fetch(`${API}/api/bookers`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    if (!res.ok) throw new Error();
+    input.value = '';
+    await fetchBookers();
+  } catch { showToast('新增失敗', true); }
+}
+
+async function deleteBooker(id, name) {
+  if (!confirm(`確定要移除「${name}」？`)) return;
+  try {
+    await fetch(`${API}/api/bookers/${id}`, { method: 'DELETE' });
+    if (selectedBooker === name) selectedBooker = '';
+    await fetchBookers();
   } catch { showToast('移除失敗', true); }
 }
 
@@ -531,6 +588,7 @@ async function handleSubmit(e) {
     start_time: start, end_time: end,
     complaint:  document.getElementById('complaint').value.trim(),
     visit_type: visitType,
+    booker:     selectedBooker || null,
   };
 
   const btn = document.getElementById('submitBtn');
@@ -555,6 +613,8 @@ function resetForm() {
   fillDatalist('endTimeList', timeSlots());
   document.getElementById('doctor').value = '';
   document.querySelector('input[name="visitType"][value="初診"]').checked = true;
+  selectedBooker = '';
+  renderBookerChips();
 }
 
 function focusForm() {
