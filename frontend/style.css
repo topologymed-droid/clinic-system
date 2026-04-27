@@ -1035,7 +1035,8 @@ textarea { resize: vertical; min-height: 76px; }
   margin-bottom: 5px;
 }
 .edit-row input[type="date"],
-.edit-row input[type="text"] {
+.edit-row input[type="text"],
+.edit-row textarea {
   width: 100%;
   padding: 9px 12px;
   border: 1.5px solid var(--warm-border);
@@ -1044,6 +1045,19 @@ textarea { resize: vertical; min-height: 76px; }
   font-family: inherit;
   color: var(--text-main);
   background: var(--warm-bg);
+  transition: border-color .15s, box-shadow .15s;
+}
+.edit-row textarea {
+  resize: vertical;
+  min-height: 72px;
+  line-height: 1.5;
+}
+.edit-row input:focus,
+.edit-row textarea:focus {
+  outline: none;
+  border-color: var(--teal);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(74,155,142,.13);
 }
 
 /* ─── Booker Chips ───────────────────────────────────────────────────────────── */

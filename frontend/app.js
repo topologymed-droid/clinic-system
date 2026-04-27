@@ -669,7 +669,11 @@ function editAppointment(eventId) {
   const currentDoc = getDocFromSummary(ev.summary || '', ev);
   const currentDocName = currentDoc?.name || '';
 
-  // 醫師選單 options
+  // 現有主訴
+  const meta = getEventMeta(ev);
+  const currentComplaint = meta.complaint;
+
+  // 醫師選單 options（預選當前醫師）
   const doctorOptions = doctorsList.map(d =>
     `<option value="${escHtml(d.name)}" ${d.name === currentDocName ? 'selected' : ''}>${escHtml(d.name)}</option>`
   ).join('');
@@ -700,9 +704,12 @@ function editAppointment(eventId) {
         <div class="edit-row">
           <label class="field-label">主治醫師</label>
           <select id="editDoctor">
-            <option value="">（不變更）</option>
             ${doctorOptions}
           </select>
+        </div>
+        <div class="edit-row">
+          <label class="field-label">主訴 / 症狀</label>
+          <textarea id="editComplaint" rows="3" placeholder="請描述主訴或症狀…">${escHtml(currentComplaint)}</textarea>
         </div>
       </div>
       <div class="confirm-actions">
@@ -722,10 +729,11 @@ function editAppointment(eventId) {
 }
 
 async function saveEditedAppointment(eventId) {
-  const date   = document.getElementById('editDate').value;
-  const start  = document.getElementById('editStart').value.trim();
-  const end    = document.getElementById('editEnd').value.trim();
-  const newDoc = document.getElementById('editDoctor')?.value || '';
+  const date      = document.getElementById('editDate').value;
+  const start     = document.getElementById('editStart').value.trim();
+  const end       = document.getElementById('editEnd').value.trim();
+  const selDoctor = document.getElementById('editDoctor')?.value || '';
+  const newComplaint = document.getElementById('editComplaint')?.value.trim() ?? '';
   const [sh, sm] = parseTime(start);
   const [eh, em] = parseTime(end);
   if (!date)                { showToast('請選擇日期', true); return; }
@@ -733,21 +741,19 @@ async function saveEditedAppointment(eventId) {
   if (eh === null)          { showToast('請輸入正確的結束時間（例：09:30）', true); return; }
   if (eh*60+em <= sh*60+sm) { showToast('結束時間必須晚於開始時間', true); return; }
 
-  const ev = eventsCache[eventId] || {};
+  const ev   = eventsCache[eventId] || {};
+  const meta = getEventMeta(ev);
+
   const payload = {
     date,
-    start_time: `${pad(sh)}:${pad(sm)}`,
-    end_time:   `${pad(eh)}:${pad(em)}`,
+    start_time:   `${pad(sh)}:${pad(sm)}`,
+    end_time:     `${pad(eh)}:${pad(em)}`,
+    // 永遠帶醫師、患者、就診類型、主訴，讓後端能正確重建 summary / description
+    doctor:       selDoctor,
+    patient_name: getPatientNameFromEvent(ev),
+    visit_type:   meta.visit_type,
+    complaint:    newComplaint,
   };
-
-  // 若有變更醫師，加入重建 summary 需要的資訊
-  if (newDoc) {
-    const meta = getEventMeta(ev);
-    payload.doctor       = newDoc;
-    payload.patient_name = getPatientNameFromEvent(ev);
-    payload.visit_type   = meta.visit_type;
-    payload.complaint    = meta.complaint;
-  }
 
   const btn = document.getElementById('editSaveBtn');
   btn.disabled = true; btn.textContent = '儲存中…';
@@ -761,9 +767,9 @@ async function saveEditedAppointment(eventId) {
     const result = await res.json();
 
     closeModal();
-    showToast(newDoc ? `✅ 已更新（醫師改為 ${newDoc}）` : '✅ 時間已更新', false);
+    showToast('✅ 約診已更新', false);
 
-    // 跨日曆搬移需等 Google Calendar 傳播後再重載，同日曆直接重載
+    // 跨日曆搬移需等 Google Calendar 傳播後再重載
     if (result.moved) {
       btn.textContent = '更新中…';
       await new Promise(r => setTimeout(r, 2000));

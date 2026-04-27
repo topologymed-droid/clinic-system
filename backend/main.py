@@ -563,15 +563,17 @@ def update_appointment(event_id: str, update: AppointmentUpdate):
         old_e = datetime.fromisoformat(ev['end']['dateTime'].replace('+08:00',''))
         log_time_change(event_id, ev.get('summary',''), old_s, old_e, start_dt, end_dt)
 
-        # 只更新需要改的欄位（用 patch 而非 update/PUT，避免覆蓋 description）
+        # 只更新需要改的欄位（用 patch 而非 update/PUT，避免覆蓋其他內容）
         patch_body = {
             'start': {'dateTime': start_dt.isoformat(), 'timeZone': 'Asia/Taipei'},
             'end':   {'dateTime': end_dt.isoformat(),   'timeZone': 'Asia/Taipei'},
         }
 
-        # 若有提供新醫師，重建 summary 並處理跨日曆移動
-        if update.doctor:
-            new_cal_id = get_calendar_id(update.doctor)
+        # 若有提供醫師或主訴，重建 summary，並更新 description 的主訴那行
+        if update.doctor or update.complaint is not None:
+            doctor    = update.doctor or ''
+            new_cal_id = get_calendar_id(doctor) if doctor else found_cal_id
+
             if update.patient_name:
                 # 保留原本 summary 中的約診者前綴（例：哲毅:）
                 existing_booker = update.booker or ''
@@ -580,38 +582,44 @@ def update_appointment(event_id: str, update: AppointmentUpdate):
                     if ': ' in existing_summary[:15]:
                         existing_booker = existing_summary.split(': ', 1)[0]
 
-                # 使用 description 中的完整主訴（若 update.complaint 未傳或為空）
-                complaint = update.complaint or ''
+                # 主訴：前端傳來的優先，否則從 description 取
+                complaint = update.complaint if update.complaint is not None else ''
                 if not complaint:
-                    desc = ev.get('description', '') or ''
-                    m = re.search(r'主訴：([^\n]+)', desc)
+                    desc_old = ev.get('description', '') or ''
+                    m = re.search(r'主訴：([^\n]+)', desc_old)
                     if m:
                         complaint = m.group(1).strip()
 
                 patch_body['summary'] = event_summary(
-                    update.doctor,
+                    doctor or '未知醫師',
                     update.patient_name,
                     update.visit_type or '複診',
                     complaint,
                     existing_booker
                 )
-                # 更新患者記憶
-                update_patient_doctor(update.patient_name, update.doctor)
 
-            if new_cal_id != found_cal_id:
-                # 跨日曆：先 get 完整事件，只換 summary/start/end，其餘（含 description）全保留
-                full_ev = dict(ev)  # ev 已從 get() 取得，含完整 description
-                full_ev['start'] = patch_body['start']
-                full_ev['end']   = patch_body['end']
-                if 'summary' in patch_body:
-                    full_ev['summary'] = patch_body['summary']
+                # 同步更新 description 裡的「主訴：」那行，其餘（患者、電話、類型）不動
+                existing_desc = ev.get('description', '') or ''
+                if '主訴：' in existing_desc:
+                    new_desc = re.sub(r'主訴：[^\n]*', f'主訴：{complaint}', existing_desc)
+                else:
+                    new_desc = existing_desc + (f'\n主訴：{complaint}' if existing_desc else f'主訴：{complaint}')
+                patch_body['description'] = new_desc
+
+                if doctor:
+                    update_patient_doctor(update.patient_name, doctor)
+
+            if doctor and new_cal_id != found_cal_id:
+                # 跨日曆：用完整 ev + patch_body 的欄位建立新事件
+                full_ev = dict(ev)
+                full_ev.update(patch_body)
                 clean_ev = {k: v for k, v in full_ev.items()
                             if k not in ["id","etag","iCalUID","sequence","created","updated","htmlLink","organizer","creator"]}
                 created = service.events().insert(calendarId=new_cal_id, body=clean_ev).execute()
                 service.events().delete(calendarId=found_cal_id, eventId=event_id).execute()
                 return {"status": "updated", "event_id": created.get('id'), "moved": True}
 
-        # 同日曆：用 patch()，只改 start/end/summary，description 完全不動
+        # 同日曆：patch() 只改有在 patch_body 的欄位
         updated = service.events().patch(calendarId=found_cal_id, eventId=event_id, body=patch_body).execute()
         return {"status": "updated", "event_id": updated.get('id')}
     except HTTPException:
