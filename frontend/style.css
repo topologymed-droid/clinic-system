@@ -1095,3 +1095,46 @@ textarea { resize: vertical; min-height: 76px; }
   outline: none;
   border-color: var(--teal);
 }
+
+/* ─── Patient Doctor Hint ─────────────────────────────────────────────────── */
+.patient-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 7px 12px;
+  background: #fffbea;
+  border: 1.5px solid #e6c84a;
+  border-radius: 9px;
+  font-size: 13px;
+  color: #6b5800;
+}
+.patient-hint button {
+  padding: 3px 12px;
+  border: 1.5px solid #c8a800;
+  border-radius: 6px;
+  background: #fff8d0;
+  color: #6b5800;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.patient-hint button:hover { background: #ffe97a; }
+
+/* ─── Edit Doctor Select ──────────────────────────────────────────────────── */
+.edit-row select {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid var(--warm-border);
+  border-radius: 9px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text-main);
+  background: var(--warm-bg);
+  cursor: pointer;
+}
+.edit-row select:focus {
+  outline: none;
+  border-color: var(--teal);
+}

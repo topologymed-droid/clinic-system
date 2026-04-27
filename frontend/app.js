@@ -31,6 +31,19 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('startTime').addEventListener('change', updateEndOptions);
   document.getElementById('endTime').addEventListener('change', updateDurationBadge);
+
+  // 患者姓名自動提示上次醫師
+  let patientLookupTimer = null;
+  document.getElementById('patientName').addEventListener('input', () => {
+    clearTimeout(patientLookupTimer);
+    const name = document.getElementById('patientName').value.trim();
+    if (name.length < 2) { hidePatientHint(); return; }
+    patientLookupTimer = setTimeout(() => lookupPatientDoctor(name), 500);
+  });
+  document.getElementById('patientName').addEventListener('blur', () => {
+    const name = document.getElementById('patientName').value.trim();
+    if (name.length >= 2) lookupPatientDoctor(name);
+  });
 });
 
 // ─── Tab ──────────────────────────────────────────────────────────────────────
@@ -275,6 +288,48 @@ async function deleteDoctor(id, name) {
   } catch { showToast('移除失敗', true); }
 }
 
+// ─── Patient Doctor Hint ──────────────────────────────────────────────────────
+async function lookupPatientDoctor(name) {
+  try {
+    const res  = await fetch(`${API}/api/patients/lookup?name=${encodeURIComponent(name)}`);
+    const data = await res.json();
+    if (data.doctor) {
+      showPatientHint(data.doctor, data.matched_name);
+    } else {
+      hidePatientHint();
+    }
+  } catch { hidePatientHint(); }
+}
+
+function showPatientHint(doctor, matchedName) {
+  let hint = document.getElementById('patientDoctorHint');
+  if (!hint) {
+    hint = document.createElement('div');
+    hint.id = 'patientDoctorHint';
+    hint.className = 'patient-hint';
+    document.getElementById('patientName').parentNode.appendChild(hint);
+  }
+  const label = matchedName ? `（${matchedName}）` : '';
+  hint.innerHTML = `
+    <span>📌 上次看診醫師${label}：<strong>${escHtml(doctor)}</strong></span>
+    <button type="button" onclick="applyPatientDoctor('${escHtml(doctor)}')">套用</button>`;
+  hint.style.display = 'flex';
+}
+
+function hidePatientHint() {
+  const hint = document.getElementById('patientDoctorHint');
+  if (hint) hint.style.display = 'none';
+}
+
+function applyPatientDoctor(doctorName) {
+  const sel = document.getElementById('doctor');
+  if (sel) {
+    sel.value = doctorName;
+    sel.dispatchEvent(new Event('change'));
+  }
+  hidePatientHint();
+}
+
 // ─── Bookers ──────────────────────────────────────────────────────────────────
 async function fetchBookers() {
   try {
@@ -473,6 +528,26 @@ async function undoDelete() {
 }
 
 // ─── Edit Appointment ─────────────────────────────────────────────────────────
+function getPatientNameFromEvent(ev) {
+  // 先從 description 的「患者：」行取
+  const desc = ev.description || '';
+  const m = desc.match(/患者：(.+)/);
+  if (m) return m[1].trim();
+  // 退路：從 summary 解析
+  let s = ev.summary || '';
+  if (s.includes(': ')) s = s.split(': ').slice(1).join(': ');
+  if (s.startsWith('NP ')) s = s.slice(3);
+  s = s.replace(/^Dr\.\S+\s+/, '');
+  return s.split(' ')[0] || '';
+}
+
+function getEventMeta(ev) {
+  const desc = ev.description || '';
+  const vt = (desc.match(/類型：(.+)/) || [])[1]?.trim() || '複診';
+  const cp = (desc.match(/主訴：(.+)/) || [])[1]?.trim() || '';
+  return { visit_type: vt, complaint: cp };
+}
+
 function editAppointment(eventId) {
   const ev = eventsCache[eventId];
   if (!ev) { showToast('找不到約診資料', true); return; }
@@ -482,11 +557,20 @@ function editAppointment(eventId) {
   const startVal = startDT ? `${pad(startDT.getHours())}:${pad(startDT.getMinutes())}` : '';
   const endVal   = endDT   ? `${pad(endDT.getHours())}:${pad(endDT.getMinutes())}`   : '';
 
+  // 判斷當前醫師
+  const currentDoc = getDocFromSummary(ev.summary || '', ev);
+  const currentDocName = currentDoc?.name || '';
+
+  // 醫師選單 options
+  const doctorOptions = doctorsList.map(d =>
+    `<option value="${escHtml(d.name)}" ${d.name === currentDocName ? 'selected' : ''}>${escHtml(d.name)}</option>`
+  ).join('');
+
   const box = document.querySelector('.modal-box');
   const all = timeSlots();
   box.innerHTML = `
     <div class="edit-box">
-      <h4>✏️ 修改看診時間</h4>
+      <h4>✏️ 修改約診</h4>
       <p class="edit-summary">${escHtml(ev.summary || '')}</p>
       <div class="edit-fields">
         <div class="edit-row">
@@ -504,6 +588,13 @@ function editAppointment(eventId) {
           <input type="text" id="editEnd" value="${endVal}"
                  list="editEndList" maxlength="5" placeholder="09:30" autocomplete="off" />
           <datalist id="editEndList"></datalist>
+        </div>
+        <div class="edit-row">
+          <label class="field-label">主治醫師</label>
+          <select id="editDoctor">
+            <option value="">（不變更）</option>
+            ${doctorOptions}
+          </select>
         </div>
       </div>
       <div class="confirm-actions">
@@ -523,9 +614,10 @@ function editAppointment(eventId) {
 }
 
 async function saveEditedAppointment(eventId) {
-  const date  = document.getElementById('editDate').value;
-  const start = document.getElementById('editStart').value.trim();
-  const end   = document.getElementById('editEnd').value.trim();
+  const date   = document.getElementById('editDate').value;
+  const start  = document.getElementById('editStart').value.trim();
+  const end    = document.getElementById('editEnd').value.trim();
+  const newDoc = document.getElementById('editDoctor')?.value || '';
   const [sh, sm] = parseTime(start);
   const [eh, em] = parseTime(end);
   if (!date)                { showToast('請選擇日期', true); return; }
@@ -533,19 +625,35 @@ async function saveEditedAppointment(eventId) {
   if (eh === null)          { showToast('請輸入正確的結束時間（例：09:30）', true); return; }
   if (eh*60+em <= sh*60+sm) { showToast('結束時間必須晚於開始時間', true); return; }
 
+  const ev = eventsCache[eventId] || {};
+  const payload = {
+    date,
+    start_time: `${pad(sh)}:${pad(sm)}`,
+    end_time:   `${pad(eh)}:${pad(em)}`,
+  };
+
+  // 若有變更醫師，加入重建 summary 需要的資訊
+  if (newDoc) {
+    const meta = getEventMeta(ev);
+    payload.doctor       = newDoc;
+    payload.patient_name = getPatientNameFromEvent(ev);
+    payload.visit_type   = meta.visit_type;
+    payload.complaint    = meta.complaint;
+  }
+
   const btn = document.getElementById('editSaveBtn');
   btn.disabled = true; btn.textContent = '儲存中…';
   try {
     const res = await fetch(`${API}/api/appointments/${eventId}`, {
       method:  'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ date, start_time: `${pad(sh)}:${pad(sm)}`, end_time: `${pad(eh)}:${pad(em)}` }),
+      body:    JSON.stringify(payload),
     });
     if (!res.ok) { const r = await res.json(); throw new Error(r.detail); }
     closeModal();
     await loadAppointments();
     if (calSelectedDate) await loadCalendarDay(calSelectedDate);
-    showToast('✅ 時間已更新', false);
+    showToast(newDoc ? `✅ 已更新（醫師改為 ${newDoc}）` : '✅ 時間已更新', false);
   } catch(e) {
     showToast('更新失敗：' + e.message, true);
     btn.disabled = false; btn.textContent = '儲存';
@@ -624,6 +732,7 @@ function resetForm() {
   document.querySelector('input[name="visitType"][value="初診"]').checked = true;
   selectedBooker = '';
   renderBookerChips();
+  hidePatientHint();
 }
 
 function focusForm() {

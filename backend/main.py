@@ -19,6 +19,7 @@ FRONTEND_DIR    = os.path.join(BASE_DIR, '..', 'frontend')
 DOCTORS_FILE     = os.path.join(BASE_DIR, 'doctors.json')
 HISTORY_FILE     = os.path.join(BASE_DIR, 'history.json')
 BOOKERS_FILE     = os.path.join(BASE_DIR, 'bookers.json')
+PATIENTS_FILE    = os.path.join(BASE_DIR, 'patients.json')
 TOKEN_FILE       = os.path.join(BASE_DIR, 'token.json')
 CREDENTIALS_FILE = os.path.join(BASE_DIR, 'credentials.json')
 
@@ -67,6 +68,25 @@ def load_bookers():
 def save_bookers(bookers):
     with open(BOOKERS_FILE, 'w', encoding='utf-8') as f:
         json.dump(bookers, f, ensure_ascii=False, indent=2)
+
+# ─── Patients Helpers ─────────────────────────────────────────────────────────
+def load_patients():
+    if not os.path.exists(PATIENTS_FILE):
+        return {}
+    with open(PATIENTS_FILE, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+def save_patients(patients):
+    with open(PATIENTS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(patients, f, ensure_ascii=False, indent=2)
+
+def update_patient_doctor(patient_name: str, doctor: str):
+    """記憶患者對應醫師"""
+    if not patient_name or not doctor:
+        return
+    patients = load_patients()
+    patients[patient_name.strip()] = doctor.strip()
+    save_patients(patients)
 
 # ─── Default Doctors ──────────────────────────────────────────────────────────
 DEFAULT_DOCTORS = [
@@ -171,6 +191,11 @@ class AppointmentUpdate(BaseModel):
     date: str        # YYYY-MM-DD
     start_time: str  # HH:MM
     end_time: str    # HH:MM
+    doctor: Optional[str] = None        # 若提供，更新醫師（含日曆轉移）
+    patient_name: Optional[str] = None  # 重建 summary 用
+    visit_type: Optional[str] = None
+    complaint: Optional[str] = None
+    booker: Optional[str] = None
 
 class DoctorCreate(BaseModel):
     name: str
@@ -243,6 +268,20 @@ def delete_booker(booker_id: str):
     save_bookers(bookers)
     return {"status": "ok"}
 
+# ─── Patient Lookup Route ─────────────────────────────────────────────────────
+@app.get("/api/patients/lookup")
+def lookup_patient(name: str):
+    patients = load_patients()
+    name = name.strip()
+    # 完全符合
+    if name in patients:
+        return {"doctor": patients[name]}
+    # 部分符合
+    for pname, doctor in patients.items():
+        if name in pname or pname in name:
+            return {"doctor": doctor, "matched_name": pname}
+    return {"doctor": None}
+
 # ─── Appointment Routes ───────────────────────────────────────────────────────
 @app.post("/api/appointments")
 def create_appointment(appt: AppointmentCreate):
@@ -252,9 +291,11 @@ def create_appointment(appt: AppointmentCreate):
         start_dt = datetime.strptime(f"{appt.date} {appt.start_time}", "%Y-%m-%d %H:%M")
         end_dt   = datetime.strptime(f"{appt.date} {appt.end_time}",   "%Y-%m-%d %H:%M")
 
+        update_patient_doctor(appt.patient_name, appt.doctor)
         event = {
             'summary': event_summary(appt.doctor, appt.patient_name, appt.visit_type, appt.complaint, appt.booker or ''),
             'description': (
+                f"患者：{appt.patient_name}\n"
                 f"電話：{appt.phone or '未提供'}\n"
                 f"主訴：{appt.complaint}\n"
                 f"類型：{appt.visit_type}"
@@ -381,20 +422,53 @@ def update_appointment(event_id: str, update: AppointmentUpdate):
         service  = get_calendar_service()
         start_dt = datetime.strptime(f"{update.date} {update.start_time}", "%Y-%m-%d %H:%M")
         end_dt   = datetime.strptime(f"{update.date} {update.end_time}",   "%Y-%m-%d %H:%M")
+
+        # 找到活動在哪個日曆
+        found_cal_id = None
+        ev = None
         for cal_id in [CALENDAR_MAIN, CALENDAR_SU]:
             try:
                 ev = service.events().get(calendarId=cal_id, eventId=event_id).execute()
-                # 記錄時間異動
-                old_s = datetime.fromisoformat(ev['start']['dateTime'].replace('+08:00',''))
-                old_e = datetime.fromisoformat(ev['end']['dateTime'].replace('+08:00',''))
-                log_time_change(event_id, ev.get('summary',''), old_s, old_e, start_dt, end_dt)
-                ev['start'] = {'dateTime': start_dt.isoformat(), 'timeZone': 'Asia/Taipei'}
-                ev['end']   = {'dateTime': end_dt.isoformat(),   'timeZone': 'Asia/Taipei'}
-                updated = service.events().update(calendarId=cal_id, eventId=event_id, body=ev).execute()
-                return {"status": "updated", "event_id": updated.get('id')}
+                found_cal_id = cal_id
+                break
             except Exception:
                 continue
-        raise HTTPException(status_code=404, detail="找不到此約診")
+        if not ev:
+            raise HTTPException(status_code=404, detail="找不到此約診")
+
+        # 記錄時間異動
+        old_s = datetime.fromisoformat(ev['start']['dateTime'].replace('+08:00',''))
+        old_e = datetime.fromisoformat(ev['end']['dateTime'].replace('+08:00',''))
+        log_time_change(event_id, ev.get('summary',''), old_s, old_e, start_dt, end_dt)
+
+        # 更新時間
+        ev['start'] = {'dateTime': start_dt.isoformat(), 'timeZone': 'Asia/Taipei'}
+        ev['end']   = {'dateTime': end_dt.isoformat(),   'timeZone': 'Asia/Taipei'}
+
+        # 若有提供新醫師，重建 summary 並處理跨日曆移動
+        if update.doctor:
+            new_cal_id = get_calendar_id(update.doctor)
+            if update.patient_name:
+                ev['summary'] = event_summary(
+                    update.doctor,
+                    update.patient_name,
+                    update.visit_type or '複診',
+                    update.complaint or '',
+                    update.booker or ''
+                )
+                # 更新患者記憶
+                update_patient_doctor(update.patient_name, update.doctor)
+
+            if new_cal_id != found_cal_id:
+                # 跨日曆：刪除舊的，在新日曆建立
+                clean_ev = {k: v for k, v in ev.items()
+                            if k not in ["id","etag","iCalUID","sequence","created","updated","htmlLink","organizer","creator"]}
+                created = service.events().insert(calendarId=new_cal_id, body=clean_ev).execute()
+                service.events().delete(calendarId=found_cal_id, eventId=event_id).execute()
+                return {"status": "updated", "event_id": created.get('id'), "moved": True}
+
+        updated = service.events().update(calendarId=found_cal_id, eventId=event_id, body=ev).execute()
+        return {"status": "updated", "event_id": updated.get('id')}
     except HTTPException:
         raise
     except Exception as e:
