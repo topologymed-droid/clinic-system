@@ -1054,7 +1054,10 @@ textarea { resize: vertical; min-height: 76px; }
   margin-bottom: 8px;
 }
 .booker-chip {
-  padding: 6px 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px 6px 16px;
   border-radius: 20px;
   border: 2px solid var(--warm-border);
   background: var(--warm-card);
@@ -1075,6 +1078,27 @@ textarea { resize: vertical; min-height: 76px; }
   border-color: var(--teal-dark);
   color: #fff;
   box-shadow: 0 2px 8px rgba(53,122,111,.3);
+}
+.booker-chip-x {
+  font-size: 11px;
+  line-height: 1;
+  color: var(--text-hint);
+  cursor: pointer;
+  padding: 1px 3px;
+  border-radius: 50%;
+  transition: color .12s, background .12s;
+  flex-shrink: 0;
+}
+.booker-chip-x:hover {
+  color: var(--red);
+  background: rgba(192,84,74,.1);
+}
+.booker-chip.active .booker-chip-x {
+  color: rgba(255,255,255,.65);
+}
+.booker-chip.active .booker-chip-x:hover {
+  color: #fff;
+  background: rgba(255,255,255,.2);
 }
 .add-booker-row {
   display: flex;

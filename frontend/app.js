@@ -311,22 +311,53 @@ function initPatientAutocomplete() {
   dropdown.className = 'autocomplete-dropdown';
   wrap.appendChild(dropdown);
 
-  function showDropdown(q) {
+  let suggestTimer    = null;
+  let suggestCtrl     = null;   // AbortController
+
+  async function showSuggestions(q) {
     if (!q) { dropdown.style.display = 'none'; return; }
-    const matches = allPatientNames
-      .filter(n => n.includes(q))
-      .slice(0, 8);
-    if (!matches.length) { dropdown.style.display = 'none'; return; }
-    dropdown.innerHTML = matches.map(name => {
-      const hi = name.replace(q, `<mark>${escHtml(q)}</mark>`);
-      return `<div class="autocomplete-item" onmousedown="selectPatientName('${escHtml(name)}')">${hi}</div>`;
-    }).join('');
-    dropdown.style.display = 'block';
+
+    // 取消上一個尚未完成的請求
+    if (suggestCtrl) suggestCtrl.abort();
+    suggestCtrl = new AbortController();
+
+    try {
+      const res   = await fetch(
+        `${API}/api/patients/suggest?q=${encodeURIComponent(q)}`,
+        { signal: suggestCtrl.signal }
+      );
+      const names = await res.json();
+      if (!names.length) { dropdown.style.display = 'none'; return; }
+      dropdown.innerHTML = names.map(name => {
+        const escaped = escHtml(name);
+        // 高亮匹配字元
+        const hi = escaped.replace(escHtml(q), `<mark>${escHtml(q)}</mark>`);
+        return `<div class="autocomplete-item" onmousedown="selectPatientName('${escaped}')">${hi}</div>`;
+      }).join('');
+      dropdown.style.display = 'block';
+    } catch (err) {
+      if (err.name !== 'AbortError') dropdown.style.display = 'none';
+    }
   }
 
-  input.addEventListener('input', () => showDropdown(input.value.trim()));
-  input.addEventListener('focus', () => showDropdown(input.value.trim()));
-  input.addEventListener('blur',  () => setTimeout(() => { dropdown.style.display = 'none'; }, 200));
+  // 輸入時：debounce 300ms 後送出查詢
+  input.addEventListener('input', () => {
+    clearTimeout(suggestTimer);
+    const q = input.value.trim();
+    if (!q) { dropdown.style.display = 'none'; return; }
+    suggestTimer = setTimeout(() => showSuggestions(q), 300);
+  });
+
+  // 重新 focus 時：若有輸入立即顯示
+  input.addEventListener('focus', () => {
+    const q = input.value.trim();
+    if (q) showSuggestions(q);
+  });
+
+  // 失焦時延遲隱藏（讓 mousedown 先觸發）
+  input.addEventListener('blur', () => {
+    setTimeout(() => { dropdown.style.display = 'none'; }, 200);
+  });
 
   // 鍵盤上下選擇
   input.addEventListener('keydown', e => {
@@ -416,13 +447,22 @@ function renderBookerChips() {
   bookersList.forEach(b => {
     const chip = document.createElement('div');
     chip.className = 'booker-chip' + (selectedBooker === b.name ? ' active' : '');
-    chip.textContent = b.name;
-    chip.onclick = () => {
+
+    const label = document.createElement('span');
+    label.textContent = b.name;
+    label.onclick = () => {
       selectedBooker = selectedBooker === b.name ? '' : b.name;
       renderBookerChips();
     };
-    // 右鍵長按刪除
-    chip.ondblclick = () => deleteBooker(b.id, b.name);
+
+    const x = document.createElement('span');
+    x.className = 'booker-chip-x';
+    x.textContent = '✕';
+    x.title = '移除';
+    x.onclick = e => { e.stopPropagation(); deleteBooker(b.id, b.name); };
+
+    chip.appendChild(label);
+    chip.appendChild(x);
     container.appendChild(chip);
   });
 }

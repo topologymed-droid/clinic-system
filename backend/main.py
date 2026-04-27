@@ -1,4 +1,5 @@
 import os
+import re
 import json
 from datetime import datetime, timedelta
 from typing import Optional
@@ -269,11 +270,66 @@ def delete_booker(booker_id: str):
     return {"status": "ok"}
 
 # ─── Patient Routes ───────────────────────────────────────────────────────────
+def extract_patient_name(ev: dict) -> str:
+    """從事件中解析患者姓名"""
+    # 優先從 description 的「患者：」欄取
+    desc = ev.get('description', '') or ''
+    m = re.search(r'患者：([^\n]+)', desc)
+    if m:
+        return m.group(1).strip()
+    # 從 summary 解析
+    s = (ev.get('summary', '') or '').strip()
+    # 去除約診者前綴（ex. "哲毅: "）
+    if ': ' in s[:15]:
+        s = s.split(': ', 1)[1].strip()
+    # 去除 NP
+    if s.upper().startswith('NP '):
+        s = s[3:].strip()
+    # 去除 Dr.X
+    s = re.sub(r'^(?:Dr|dr)[.．]?\S+\s*', '', s).strip()
+    # 取第一個 token
+    parts = s.split()
+    if parts and len(parts[0]) >= 2:
+        return parts[0]
+    return ''
+
 @app.get("/api/patients")
 def get_all_patients():
     """回傳所有已記憶的患者姓名清單"""
     patients = load_patients()
     return sorted(patients.keys())
+
+@app.get("/api/patients/suggest")
+def suggest_patients(q: str):
+    """從 patients.json + Google Calendar 搜尋符合的患者姓名"""
+    if not q:
+        return []
+    names: set = set()
+    # patients.json（快速本地）
+    for name in load_patients().keys():
+        if q in name:
+            names.add(name)
+    # Google Calendar 歷史搜尋
+    try:
+        service  = get_calendar_service()
+        time_min = "2020-01-01T00:00:00+08:00"
+        time_max = "2099-12-31T23:59:59+08:00"
+        for cal_id in [CALENDAR_MAIN, CALENDAR_SU]:
+            try:
+                result = service.events().list(
+                    calendarId=cal_id,
+                    timeMin=time_min, timeMax=time_max,
+                    singleEvents=True, q=q, maxResults=50,
+                ).execute()
+                for ev in result.get('items', []):
+                    name = extract_patient_name(ev)
+                    if name and q in name and len(name) >= 2:
+                        names.add(name)
+            except Exception:
+                continue
+    except Exception:
+        pass
+    return sorted(names)
 
 @app.get("/api/patients/lookup")
 def lookup_patient(name: str):
