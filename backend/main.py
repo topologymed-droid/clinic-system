@@ -1,6 +1,9 @@
 import os
 import re
 import json
+import base64
+import threading
+import urllib.request
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -25,6 +28,60 @@ TOKEN_FILE       = os.path.join(BASE_DIR, 'token.json')
 CREDENTIALS_FILE = os.path.join(BASE_DIR, 'credentials.json')
 
 SCOPES = ['https://www.googleapis.com/auth/calendar']
+
+# ─── GitHub 自動同步 ───────────────────────────────────────────────────────────
+GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN', '')
+GITHUB_REPO  = 'topologymed-droid/clinic-system'
+
+# 需要自動同步到 GitHub 的檔案（Railway 重新部署時不會遺失）
+SYNC_FILES = {
+    DOCTORS_FILE:  'backend/doctors.json',
+    BOOKERS_FILE:  'backend/bookers.json',
+    PATIENTS_FILE: 'backend/patients.json',
+}
+
+def _push_to_github(local_path: str, repo_path: str):
+    """把本地 JSON 檔同步推送到 GitHub（背景執行，不阻塞 API 回應）"""
+    if not GITHUB_TOKEN:
+        return
+    try:
+        api_url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{repo_path}"
+        headers = {
+            'Authorization': f'token {GITHUB_TOKEN}',
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json',
+        }
+        # 取得目前檔案的 SHA（更新時必須提供）
+        sha = ''
+        try:
+            req = urllib.request.Request(api_url, headers=headers)
+            with urllib.request.urlopen(req, timeout=10) as r:
+                sha = json.loads(r.read()).get('sha', '')
+        except Exception:
+            pass  # 新檔案時 SHA 為空也沒關係
+
+        with open(local_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        body = json.dumps({
+            'message': f'auto-sync: {repo_path}',
+            'content': base64.b64encode(content.encode()).decode(),
+            **({'sha': sha} if sha else {}),
+        }).encode()
+
+        put_req = urllib.request.Request(api_url, data=body, method='PUT', headers=headers)
+        urllib.request.urlopen(put_req, timeout=10)
+        print(f"[GitHub sync] {repo_path} ✓")
+    except Exception as e:
+        print(f"[GitHub sync] {repo_path} 失敗: {e}")
+
+def sync_to_github(local_path: str):
+    """背景非同步推送到 GitHub"""
+    repo_path = SYNC_FILES.get(local_path)
+    if not repo_path:
+        return
+    t = threading.Thread(target=_push_to_github, args=(local_path, repo_path), daemon=True)
+    t.start()
 
 # Google 行事曆 ID
 CALENDAR_MAIN = 'd9a176ceee3179840a8bd7c3835585b068e1aa3b18ddbe4cf4a70e896c89fa72@group.calendar.google.com'  # 雅言診所
@@ -69,6 +126,7 @@ def load_bookers():
 def save_bookers(bookers):
     with open(BOOKERS_FILE, 'w', encoding='utf-8') as f:
         json.dump(bookers, f, ensure_ascii=False, indent=2)
+    sync_to_github(BOOKERS_FILE)
 
 # ─── Patients Helpers ─────────────────────────────────────────────────────────
 def load_patients():
@@ -80,6 +138,7 @@ def load_patients():
 def save_patients(patients):
     with open(PATIENTS_FILE, 'w', encoding='utf-8') as f:
         json.dump(patients, f, ensure_ascii=False, indent=2)
+    sync_to_github(PATIENTS_FILE)
 
 def update_patient_doctor(patient_name: str, doctor: str):
     """記憶患者對應醫師"""
@@ -134,6 +193,7 @@ def load_doctors():
 def save_doctors(doctors):
     with open(DOCTORS_FILE, 'w', encoding='utf-8') as f:
         json.dump(doctors, f, ensure_ascii=False, indent=2)
+    sync_to_github(DOCTORS_FILE)
 
 # ─── Google Calendar Helper ───────────────────────────────────────────────────
 def get_calendar_service():
