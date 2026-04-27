@@ -503,9 +503,11 @@ def update_appointment(event_id: str, update: AppointmentUpdate):
         old_e = datetime.fromisoformat(ev['end']['dateTime'].replace('+08:00',''))
         log_time_change(event_id, ev.get('summary',''), old_s, old_e, start_dt, end_dt)
 
-        # 更新時間
-        ev['start'] = {'dateTime': start_dt.isoformat(), 'timeZone': 'Asia/Taipei'}
-        ev['end']   = {'dateTime': end_dt.isoformat(),   'timeZone': 'Asia/Taipei'}
+        # 只更新需要改的欄位（用 patch 而非 update/PUT，避免覆蓋 description）
+        patch_body = {
+            'start': {'dateTime': start_dt.isoformat(), 'timeZone': 'Asia/Taipei'},
+            'end':   {'dateTime': end_dt.isoformat(),   'timeZone': 'Asia/Taipei'},
+        }
 
         # 若有提供新醫師，重建 summary 並處理跨日曆移動
         if update.doctor:
@@ -526,7 +528,7 @@ def update_appointment(event_id: str, update: AppointmentUpdate):
                     if m:
                         complaint = m.group(1).strip()
 
-                ev['summary'] = event_summary(
+                patch_body['summary'] = event_summary(
                     update.doctor,
                     update.patient_name,
                     update.visit_type or '複診',
@@ -537,14 +539,20 @@ def update_appointment(event_id: str, update: AppointmentUpdate):
                 update_patient_doctor(update.patient_name, update.doctor)
 
             if new_cal_id != found_cal_id:
-                # 跨日曆：刪除舊的，在新日曆建立
-                clean_ev = {k: v for k, v in ev.items()
+                # 跨日曆：先 get 完整事件，只換 summary/start/end，其餘（含 description）全保留
+                full_ev = dict(ev)  # ev 已從 get() 取得，含完整 description
+                full_ev['start'] = patch_body['start']
+                full_ev['end']   = patch_body['end']
+                if 'summary' in patch_body:
+                    full_ev['summary'] = patch_body['summary']
+                clean_ev = {k: v for k, v in full_ev.items()
                             if k not in ["id","etag","iCalUID","sequence","created","updated","htmlLink","organizer","creator"]}
                 created = service.events().insert(calendarId=new_cal_id, body=clean_ev).execute()
                 service.events().delete(calendarId=found_cal_id, eventId=event_id).execute()
                 return {"status": "updated", "event_id": created.get('id'), "moved": True}
 
-        updated = service.events().update(calendarId=found_cal_id, eventId=event_id, body=ev).execute()
+        # 同日曆：用 patch()，只改 start/end/summary，description 完全不動
+        updated = service.events().patch(calendarId=found_cal_id, eventId=event_id, body=patch_body).execute()
         return {"status": "updated", "event_id": updated.get('id')}
     except HTTPException:
         raise
