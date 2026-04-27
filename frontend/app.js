@@ -502,8 +502,7 @@ function cancelAppointment(eventId, summary) {
         const result = await res.json();
         if (!res.ok) throw new Error(result.detail);
         lastDeleted = { event: result.event, calendar_id: result.calendar_id };
-        await loadAppointments();
-        if (calSelectedDate) await loadCalendarDay(calSelectedDate);
+        await reloadAllViews();
         showUndoToast(summary);
       } catch (e) { showToast('取消失敗：' + e.message, true); }
     }
@@ -521,8 +520,7 @@ async function undoDelete() {
     });
     if (!res.ok) throw new Error();
     lastDeleted = null;
-    await loadAppointments();
-    if (calSelectedDate) await loadCalendarDay(calSelectedDate);
+    await reloadAllViews();
     showToast('✅ 已成功復原', false);
   } catch { showToast('復原失敗，請重新新增', true); }
 }
@@ -650,10 +648,18 @@ async function saveEditedAppointment(eventId) {
       body:    JSON.stringify(payload),
     });
     if (!res.ok) { const r = await res.json(); throw new Error(r.detail); }
+    const result = await res.json();
+
     closeModal();
-    await loadAppointments();
-    if (calSelectedDate) await loadCalendarDay(calSelectedDate);
     showToast(newDoc ? `✅ 已更新（醫師改為 ${newDoc}）` : '✅ 時間已更新', false);
+
+    // 跨日曆搬移需等 Google Calendar 傳播後再重載，同日曆直接重載
+    if (result.moved) {
+      btn.textContent = '更新中…';
+      await new Promise(r => setTimeout(r, 2000));
+    }
+
+    await reloadAllViews();
   } catch(e) {
     showToast('更新失敗：' + e.message, true);
     btn.disabled = false; btn.textContent = '儲存';
@@ -756,6 +762,19 @@ function goAddForDate() {
       document.querySelector('.form-panel').scrollIntoView({ behavior:'smooth' });
       document.getElementById('patientName').focus();
     }, 100);
+  }
+}
+
+// ─── Reload All Views ─────────────────────────────────────────────────────────
+async function reloadAllViews() {
+  // 重載今日約診列表
+  await loadAppointments();
+  // 重載月曆選取日期的詳情 + 更新月曆格子
+  if (calSelectedDate) await loadCalendarDay(calSelectedDate);
+  // 若月曆 tab 開著但沒有選取日期，也重新渲染整個月曆
+  const calTab = document.getElementById('view-calendar');
+  if (calTab && !calTab.classList.contains('hidden') && !calSelectedDate) {
+    await renderCalendar();
   }
 }
 
