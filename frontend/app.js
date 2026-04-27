@@ -652,7 +652,22 @@ function getPatientNameFromEvent(ev) {
 function getEventMeta(ev) {
   const desc = ev.description || '';
   const vt = (desc.match(/類型：(.+)/) || [])[1]?.trim() || '複診';
-  const cp = (desc.match(/主訴：(.+)/) || [])[1]?.trim() || '';
+  let cp = (desc.match(/主訴：(.+)/) || [])[1]?.trim() || '';
+
+  // description 沒有「主訴：」→ 從 summary 標題解析（去掉約診者前綴、NP、Dr.X、患者姓名）
+  if (!cp) {
+    let s = (ev.summary || '').trim();
+    // 去掉 "約診者: " 前綴
+    if (/^.{1,6}:\s/.test(s)) s = s.replace(/^.+?:\s*/, '');
+    // 去掉 NP 前綴
+    if (s.startsWith('NP ')) s = s.slice(3).trim();
+    // 去掉 Dr.X 前綴
+    s = s.replace(/^Dr\.\S+\s*/, '').trim();
+    // 去掉第一個詞（患者姓名），剩下的就是主訴
+    const spaceIdx = s.search(/\s/);
+    if (spaceIdx > 0) cp = s.slice(spaceIdx).trim();
+  }
+
   return { visit_type: vt, complaint: cp };
 }
 
