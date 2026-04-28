@@ -396,7 +396,22 @@ textarea { resize: vertical; min-height: 76px; }
 .doctor-dot.dot-hu    { background: #a03368; }
 .doctor-dot.dot-su    { background: #2d7a4a; }
 .doctor-dot.dot-deng  { background: #c07020; }
-.doctor-name-row { display: flex; align-items: center; flex: 1; }
+.doctor-name-row { display: flex; align-items: center; flex: 1; gap: 6px; }
+.doctor-name-input {
+  flex: 1;
+  border: 1.5px solid transparent;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-main);
+  padding: 3px 6px;
+  border-radius: 6px;
+  transition: border-color .15s, background .15s;
+  outline: none;
+}
+.doctor-name-input:hover { border-color: var(--warm-border); background: var(--warm-bg); }
+.doctor-name-input:focus { border-color: var(--teal); background: white; }
 
 .add-doctor-row { display: flex; gap: 8px; align-items: center; }
 .add-doctor-row input { flex: 1; }

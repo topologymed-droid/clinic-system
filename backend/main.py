@@ -287,6 +287,19 @@ def add_doctor(doctor: DoctorCreate):
     save_doctors(doctors)
     return new_doc
 
+@app.patch("/api/doctors/{doctor_id}/name")
+def update_doctor_name(doctor_id: str, body: dict):
+    name = (body.get('name') or '').strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="名稱不能為空")
+    doctors = load_doctors()
+    for d in doctors:
+        if d['id'] == doctor_id:
+            d['name'] = name
+            break
+    save_doctors(doctors)
+    return {"status": "ok"}
+
 @app.patch("/api/doctors/{doctor_id}/note")
 def update_doctor_note(doctor_id: str, body: DoctorNoteUpdate):
     doctors = load_doctors()
@@ -598,12 +611,15 @@ def update_appointment(event_id: str, update: AppointmentUpdate):
                     existing_booker
                 )
 
-                # 同步更新 description 裡的「主訴：」那行，其餘（患者、電話、類型）不動
+                # 同步更新 description 的 患者／主訴 行，其餘（電話、類型）不動
                 existing_desc = ev.get('description', '') or ''
-                if '主訴：' in existing_desc:
-                    new_desc = re.sub(r'主訴：[^\n]*', f'主訴：{complaint}', existing_desc)
-                else:
-                    new_desc = existing_desc + (f'\n主訴：{complaint}' if existing_desc else f'主訴：{complaint}')
+                new_desc = existing_desc
+                if '患者：' in new_desc:
+                    new_desc = re.sub(r'患者：[^\n]*', f'患者：{update.patient_name}', new_desc)
+                if '主訴：' in new_desc:
+                    new_desc = re.sub(r'主訴：[^\n]*', f'主訴：{complaint}', new_desc)
+                elif complaint:
+                    new_desc += (f'\n主訴：{complaint}' if new_desc else f'主訴：{complaint}')
                 patch_body['description'] = new_desc
 
                 if doctor:

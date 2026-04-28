@@ -232,7 +232,9 @@ function renderDoctorsPanel() {
       <div class="doctor-item-top">
         <div class="doctor-name-row">
           <div class="doctor-dot" style="background:${getDocColor(d).bg};"></div>
-          <span>${escHtml(d.name)}</span>
+          <input type="text" id="docname-${d.id}" value="${escHtml(d.name)}"
+                 class="doctor-name-input" placeholder="醫師名稱" />
+          <button class="btn-note-save" onclick="saveDocName('${d.id}')">儲存</button>
         </div>
         <button class="btn-danger-sm" onclick="deleteDoctor('${d.id}','${escHtml(d.name)}')">移除</button>
       </div>
@@ -243,6 +245,24 @@ function renderDoctorsPanel() {
       </div>`;
     list.appendChild(row);
   });
+}
+
+async function saveDocName(id) {
+  const input = document.getElementById(`docname-${id}`);
+  const name  = input?.value.trim();
+  if (!name) { showToast('名稱不能為空', true); return; }
+  try {
+    const res = await fetch(`${API}/api/doctors/${id}/name`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    if (!res.ok) throw new Error();
+    const doc = doctorsList.find(d => d.id === id);
+    if (doc) doc.name = name;
+    await fetchDoctors();
+    showToast(`已更新為「${name}」`, false);
+  } catch { showToast('更新失敗', true); }
 }
 
 async function saveNote(id) {
@@ -689,6 +709,9 @@ function editAppointment(eventId) {
   const currentDoc = getDocFromSummary(ev.summary || '', ev);
   const currentDocName = currentDoc?.name || '';
 
+  // 現有患者姓名
+  const currentPatientName = getPatientNameFromEvent(ev);
+
   // 現有主訴
   const meta = getEventMeta(ev);
   const currentComplaint = meta.complaint;
@@ -720,6 +743,10 @@ function editAppointment(eventId) {
           <input type="text" id="editEnd" value="${endVal}"
                  list="editEndList" maxlength="5" placeholder="09:30" autocomplete="off" />
           <datalist id="editEndList"></datalist>
+        </div>
+        <div class="edit-row">
+          <label class="field-label">患者姓名</label>
+          <input type="text" id="editPatientName" value="${escHtml(currentPatientName)}" placeholder="患者姓名" />
         </div>
         <div class="edit-row">
           <label class="field-label">主治醫師</label>
@@ -770,7 +797,7 @@ async function saveEditedAppointment(eventId) {
     end_time:     `${pad(eh)}:${pad(em)}`,
     // 永遠帶醫師、患者、就診類型、主訴，讓後端能正確重建 summary / description
     doctor:       selDoctor,
-    patient_name: getPatientNameFromEvent(ev),
+    patient_name: document.getElementById('editPatientName')?.value.trim() || getPatientNameFromEvent(ev),
     visit_type:   meta.visit_type,
     complaint:    newComplaint,
   };
