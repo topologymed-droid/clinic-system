@@ -438,5 +438,170 @@
     "new_date": "2026-04-10",
     "new_start": "18:00",
     "new_end": "18:30"
+  },
+  {
+    "event_id": "fek42kbc9lhlia8ddgfk87pni0",
+    "summary": "Dr.張 劉至剛 temp掉了",
+    "changed_at": "2026-04-27 15:55",
+    "old_date": "2026-04-27",
+    "old_start": "09:30",
+    "old_end": "09:45",
+    "new_date": "2026-04-27",
+    "new_start": "09:30",
+    "new_end": "09:45"
+  },
+  {
+    "event_id": "fek42kbc9lhlia8ddgfk87pni0",
+    "summary": "Dr.胡 劉至剛 ",
+    "changed_at": "2026-04-27 15:55",
+    "old_date": "2026-04-27",
+    "old_start": "09:30",
+    "old_end": "09:45",
+    "new_date": "2026-04-27",
+    "new_start": "09:30",
+    "new_end": "09:45"
+  },
+  {
+    "event_id": "fek42kbc9lhlia8ddgfk87pni0",
+    "summary": "Dr.張 劉至剛 ",
+    "changed_at": "2026-04-27 15:56",
+    "old_date": "2026-04-27",
+    "old_start": "09:30",
+    "old_end": "09:45",
+    "new_date": "2026-04-27",
+    "new_start": "09:30",
+    "new_end": "09:45"
+  },
+  {
+    "event_id": "6p085he679i61hdp7m37sntgtt",
+    "summary": "DR.胡 謝季雄 排牙TRY IN ",
+    "changed_at": "2026-04-27 16:16",
+    "old_date": "2026-04-16",
+    "old_start": "14:00",
+    "old_end": "15:00",
+    "new_date": "2026-04-16",
+    "new_start": "14:00",
+    "new_end": "15:00"
+  },
+  {
+    "event_id": "6p085he679i61hdp7m37sntgtt",
+    "summary": "Dr.張 DR.胡 謝季雄 排牙TRY IN",
+    "changed_at": "2026-04-27 16:16",
+    "old_date": "2026-04-16",
+    "old_start": "14:00",
+    "old_end": "15:00",
+    "new_date": "2026-04-16",
+    "new_start": "14:00",
+    "new_end": "15:00"
+  },
+  {
+    "event_id": "3bopqjssn34a1h7o60etrae25t",
+    "summary": "賈鈞雅 fix ",
+    "changed_at": "2026-04-27 16:17",
+    "old_date": "2026-04-10",
+    "old_start": "14:30",
+    "old_end": "14:45",
+    "new_date": "2026-04-10",
+    "new_start": "14:30",
+    "new_end": "14:45"
+  },
+  {
+    "event_id": "4ccierqm5iq5g68l8tlvr83jg0",
+    "summary": "黃瑋 F/U",
+    "changed_at": "2026-04-27 16:18",
+    "old_date": "2026-04-10",
+    "old_start": "14:00",
+    "old_end": "14:30",
+    "new_date": "2026-04-10",
+    "new_start": "14:00",
+    "new_end": "14:30"
+  },
+  {
+    "event_id": "5qq0ng5aqdb9qj6meplonsbs7d",
+    "summary": "陳秀琴 27 全鋯冠DEL ，收尾1.4W",
+    "changed_at": "2026-04-27 17:04",
+    "old_date": "2026-04-17",
+    "old_start": "15:30",
+    "old_end": "16:00",
+    "new_date": "2026-04-17",
+    "new_start": "15:30",
+    "new_end": "16:00"
+  },
+  {
+    "event_id": "5k2jofcp6d032rmnnrpnhoc32q",
+    "summary": "謝碧菁 45TX印模 備紫色套件",
+    "changed_at": "2026-04-27 17:04",
+    "old_date": "2026-04-17",
+    "old_start": "17:30",
+    "old_end": "18:15",
+    "new_date": "2026-04-17",
+    "new_start": "17:30",
+    "new_end": "18:15"
+  },
+  {
+    "event_id": "7pp0fr3fg69nnb8sfe3pr8hot2",
+    "summary": "王德璋 拆線 ",
+    "changed_at": "2026-04-27 17:04",
+    "old_date": "2026-04-17",
+    "old_start": "18:00",
+    "old_end": "18:15",
+    "new_date": "2026-04-17",
+    "new_start": "18:00",
+    "new_end": "18:15"
+  },
+  {
+    "event_id": "767bmusm4gn0vnck6dcbp4ffvm",
+    "summary": "林美麗 TX*1  #45，雅夙跟刀",
+    "changed_at": "2026-04-27 17:04",
+    "old_date": "2026-04-17",
+    "old_start": "18:15",
+    "old_end": "19:15",
+    "new_date": "2026-04-17",
+    "new_start": "18:15",
+    "new_end": "19:15"
+  },
+  {
+    "event_id": "60sjecb3cgr62b9g70pm4b9kc4rm6b9p6op36bb361ijedpj6li6cchkcc",
+    "summary": "林高鵬0916933611（上顎評估牙橋，下顎RPD，書豪補充)",
+    "changed_at": "2026-04-27 17:04",
+    "old_date": "2026-04-17",
+    "old_start": "19:45",
+    "old_end": "20:45",
+    "new_date": "2026-04-17",
+    "new_start": "19:45",
+    "new_end": "20:45"
+  },
+  {
+    "event_id": "60sjecb3cgr62b9g70pm4b9kc4rm6b9p6op36bb361ijedpj6li6cchkcc",
+    "summary": "Dr.張 林高鵬0916933611（上顎評估牙橋，下顎RPD，書豪補充) （上顎評估牙橋，下顎RPD，書豪補充)",
+    "changed_at": "2026-04-27 17:05",
+    "old_date": "2026-04-17",
+    "old_start": "19:45",
+    "old_end": "20:45",
+    "new_date": "2026-04-17",
+    "new_start": "19:45",
+    "new_end": "20:45"
+  },
+  {
+    "event_id": "60jouvpgnj745atq0oc64feg1h",
+    "summary": "黃瑋 26 二階",
+    "changed_at": "2026-04-27 17:07",
+    "old_date": "2026-07-03",
+    "old_start": "18:00",
+    "old_end": "18:30",
+    "new_date": "2026-07-03",
+    "new_start": "18:00",
+    "new_end": "18:30"
+  },
+  {
+    "event_id": "0lglmcaqmtfh5gk3c7qfmdmaee",
+    "summary": "徐秋賢 F/U",
+    "changed_at": "2026-04-27 17:07",
+    "old_date": "2026-07-24",
+    "old_start": "18:00",
+    "old_end": "18:15",
+    "new_date": "2026-07-24",
+    "new_start": "18:00",
+    "new_end": "18:15"
   }
 ]

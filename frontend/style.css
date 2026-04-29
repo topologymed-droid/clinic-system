@@ -142,6 +142,46 @@ input:focus, select:focus, textarea:focus {
 input::placeholder, textarea::placeholder { color: var(--text-hint); }
 textarea { resize: vertical; min-height: 76px; }
 
+/* ─── Date Input Row (with 今日 button) ────────────────────────────────────── */
+.date-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.date-input-row input { flex: 1; }
+.btn-today {
+  padding: 9px 14px;
+  background: var(--teal-light);
+  color: var(--teal-dark);
+  border: 1.5px solid var(--teal-mid);
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s;
+  flex-shrink: 0;
+}
+.btn-today:hover { background: var(--teal-mid); }
+
+/* ─── Calendar 今日 button ─────────────────────────────────────────────────── */
+.btn-today-cal {
+  padding: 5px 12px;
+  background: var(--teal-light);
+  color: var(--teal-dark);
+  border: 1.5px solid var(--teal-mid);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s;
+  margin-left: 4px;
+}
+.btn-today-cal:hover { background: var(--teal-mid); }
+
 /* ─── Time Row ─────────────────────────────────────────────────────────────── */
 .time-row {
   display: grid;

@@ -41,7 +41,10 @@
       <div class="form-row-2">
         <div class="form-group">
           <label class="field-label" for="date">日期</label>
-          <input type="date" id="date" required />
+          <div class="date-input-row">
+            <input type="date" id="date" required />
+            <button type="button" class="btn-today" onclick="goToday()">今日</button>
+          </div>
         </div>
         <div class="form-group">
           <label class="field-label" for="doctor">主治醫師</label>
@@ -157,6 +160,7 @@
       <button class="btn-nav" id="calPrev" onclick="calNavPrev()">‹</button>
       <h2 class="cal-month-title" id="calMonthTitle"></h2>
       <button class="btn-nav" id="calNext" onclick="calNavNext()">›</button>
+      <button class="btn-today-cal" onclick="calGoToday()">今日</button>
       <div class="cal-view-toggle">
         <button class="view-btn active" id="btn-year"  onclick="setCalView('year')">年</button>
         <button class="view-btn"        id="btn-month" onclick="setCalView('month')">月</button>

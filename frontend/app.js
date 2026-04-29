@@ -73,6 +73,27 @@ function localDateStr(d) {
 }
 function pad(n) { return String(n).padStart(2, '0'); }
 
+function goToday() {
+  const input = document.getElementById('date');
+  input.value = localDateStr(new Date());
+  updateApptCardTitle();
+  loadAppointments();
+}
+
+async function calGoToday() {
+  const today = new Date();
+  calYear  = today.getFullYear();
+  calMonth = today.getMonth();
+  const todayStr = localDateStr(today);
+  calSelectedDate = todayStr;
+  await renderCalendar();
+  // 載入今日約診詳情
+  await loadCalendarDay(todayStr);
+  document.getElementById('calDetailTitle').textContent =
+    today.toLocaleDateString('zh-TW', { year:'numeric', month:'long', day:'numeric', weekday:'short' });
+  document.getElementById('calAddBtn').style.display = 'inline-block';
+}
+
 function updateApptCardTitle() {
   const date  = document.getElementById('date').value;
   const today = localDateStr(new Date());
