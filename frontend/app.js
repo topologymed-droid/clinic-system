@@ -113,6 +113,19 @@ function timeSlots(fromH = 9, toH = 22) {
   return slots;
 }
 
+// 讓 datalist 時間欄位聚焦時顯示全部時段（不受現有值過濾），離開時自動還原
+function initTimeInputShowAll(inputEl) {
+  let savedVal = '';
+  inputEl.addEventListener('focus', () => {
+    savedVal = inputEl.value;
+    inputEl.value = '';
+  });
+  inputEl.addEventListener('blur', () => {
+    if (!inputEl.value.trim()) inputEl.value = savedVal;
+    else formatTimeInput(inputEl);
+  });
+}
+
 function buildTimeSelects() {
   const all = timeSlots();
   fillDatalist('startTimeList', all);
@@ -120,6 +133,9 @@ function buildTimeSelects() {
 
   const startEl = document.getElementById('startTime');
   const endEl   = document.getElementById('endTime');
+
+  initTimeInputShowAll(startEl);
+  initTimeInputShowAll(endEl);
 
   startEl.addEventListener('input',  updateDurationBadge);
   startEl.addEventListener('change', () => { formatTimeInput(startEl); updateEndOptions(); updateDurationBadge(); });
@@ -795,14 +811,14 @@ function editAppointment(eventId) {
           <div style="flex:1">
             <label class="field-label">開始時間</label>
             <input type="text" id="editStart" value="${startVal}"
-                   list="editStartList" maxlength="5" placeholder="09:00" autocomplete="off" onclick="this.select()" />
+                   list="editStartList" maxlength="5" placeholder="09:00" autocomplete="off" />
             <datalist id="editStartList"></datalist>
           </div>
           <div class="time-arrow" style="margin-top:22px;">→</div>
           <div style="flex:1">
             <label class="field-label">結束時間</label>
             <input type="text" id="editEnd" value="${endVal}"
-                   list="editEndList" maxlength="5" placeholder="09:30" autocomplete="off" onclick="this.select()" />
+                   list="editEndList" maxlength="5" placeholder="09:30" autocomplete="off" />
             <datalist id="editEndList"></datalist>
           </div>
         </div>
@@ -855,6 +871,10 @@ function editAppointment(eventId) {
     const dl = document.getElementById(id);
     all.forEach(t => { const o = document.createElement('option'); o.value = t; dl.appendChild(o); });
   });
+
+  // 讓修改視窗的時間欄位也支援聚焦全部顯示
+  initTimeInputShowAll(document.getElementById('editStart'));
+  initTimeInputShowAll(document.getElementById('editEnd'));
 
   // 渲染約診者 chips
   renderEditBookerChips();
