@@ -257,6 +257,7 @@ class AppointmentUpdate(BaseModel):
     visit_type: Optional[str] = None
     complaint: Optional[str] = None
     booker: Optional[str] = None
+    phone: Optional[str] = None         # 電話（若提供則更新 description）
 
 class DoctorCreate(BaseModel):
     name: str
@@ -588,10 +589,12 @@ def update_appointment(event_id: str, update: AppointmentUpdate):
             new_cal_id = get_calendar_id(doctor) if doctor else found_cal_id
 
             if update.patient_name:
-                # 保留原本 summary 中的約診者前綴（例：哲毅:）
-                existing_booker = update.booker or ''
-                if not existing_booker:
+                # 約診者：前端明確傳入時使用，否則保留原本 summary 中的前綴
+                if update.booker is not None:
+                    existing_booker = update.booker  # 空字串表示清除約診者
+                else:
                     existing_summary = ev.get('summary', '')
+                    existing_booker = ''
                     if ': ' in existing_summary[:15]:
                         existing_booker = existing_summary.split(': ', 1)[0]
 
@@ -611,15 +614,29 @@ def update_appointment(event_id: str, update: AppointmentUpdate):
                     existing_booker
                 )
 
-                # 同步更新 description 的 患者／主訴 行，其餘（電話、類型）不動
+                # 同步更新 description 各行
                 existing_desc = ev.get('description', '') or ''
                 new_desc = existing_desc
                 if '患者：' in new_desc:
                     new_desc = re.sub(r'患者：[^\n]*', f'患者：{update.patient_name}', new_desc)
+                # 電話
+                if update.phone is not None:
+                    phone_val = update.phone if update.phone else '未提供'
+                    if '電話：' in new_desc:
+                        new_desc = re.sub(r'電話：[^\n]*', f'電話：{phone_val}', new_desc)
+                    else:
+                        new_desc += f'\n電話：{phone_val}'
+                # 主訴
                 if '主訴：' in new_desc:
                     new_desc = re.sub(r'主訴：[^\n]*', f'主訴：{complaint}', new_desc)
                 elif complaint:
                     new_desc += (f'\n主訴：{complaint}' if new_desc else f'主訴：{complaint}')
+                # 就診類型
+                if update.visit_type:
+                    if '類型：' in new_desc:
+                        new_desc = re.sub(r'類型：[^\n]*', f'類型：{update.visit_type}', new_desc)
+                    else:
+                        new_desc += f'\n類型：{update.visit_type}'
                 patch_body['description'] = new_desc
 
                 if doctor:

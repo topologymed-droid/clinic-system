@@ -2,10 +2,11 @@
 
 const API = ''; // 自動使用當前網域，Mac localhost 或 ngrok 都能運作
 
-let doctorsList     = [];
-let bookersList     = [];
-let selectedBooker  = '';
-let allPatientNames = [];
+let doctorsList       = [];
+let bookersList       = [];
+let selectedBooker    = '';
+let editSelectedBooker = '';
+let allPatientNames   = [];
 let calYear         = new Date().getFullYear();
 let calMonth        = new Date().getMonth(); // 0-indexed
 let calEvents       = {};  // { 'YYYY-MM-DD': [events] }
@@ -717,6 +718,36 @@ function getEventMeta(ev) {
   return { visit_type: vt, complaint: cp };
 }
 
+function getPhoneFromEvent(ev) {
+  const m = (ev.description || '').match(/電話：(.+)/);
+  if (m && m[1].trim() !== '未提供') return m[1].trim();
+  return '';
+}
+
+function getBookerFromSummary(summary) {
+  if (summary && summary.includes(': ')) {
+    const prefix = summary.split(': ', 1)[0].trim();
+    if (prefix.length >= 1 && prefix.length <= 8) return prefix;
+  }
+  return '';
+}
+
+function renderEditBookerChips() {
+  const container = document.getElementById('editBookerChips');
+  if (!container) return;
+  container.innerHTML = '';
+  bookersList.forEach(b => {
+    const chip = document.createElement('div');
+    chip.className = 'booker-chip' + (editSelectedBooker === b.name ? ' active' : '');
+    chip.textContent = b.name;
+    chip.onclick = () => {
+      editSelectedBooker = editSelectedBooker === b.name ? '' : b.name;
+      renderEditBookerChips();
+    };
+    container.appendChild(chip);
+  });
+}
+
 function editAppointment(eventId) {
   const ev = eventsCache[eventId];
   if (!ev) { showToast('找不到約診資料', true); return; }
@@ -733,9 +764,16 @@ function editAppointment(eventId) {
   // 現有患者姓名
   const currentPatientName = getPatientNameFromEvent(ev);
 
-  // 現有主訴
+  // 現有電話
+  const currentPhone = getPhoneFromEvent(ev);
+
+  // 現有主訴 & 類型
   const meta = getEventMeta(ev);
   const currentComplaint = meta.complaint;
+  const currentVisitType = meta.visit_type || '複診';
+
+  // 現有約診者
+  editSelectedBooker = getBookerFromSummary(ev.summary || '');
 
   // 醫師選單 options（預選當前醫師）
   const doctorOptions = doctorsList.map(d =>
@@ -753,27 +791,51 @@ function editAppointment(eventId) {
           <label class="field-label">日期</label>
           <input type="date" id="editDate" value="${dateStr}" />
         </div>
-        <div class="edit-row">
-          <label class="field-label">開始時間</label>
-          <input type="text" id="editStart" value="${startVal}"
-                 list="editStartList" maxlength="5" placeholder="09:00" autocomplete="off" />
-          <datalist id="editStartList"></datalist>
-        </div>
-        <div class="edit-row">
-          <label class="field-label">結束時間</label>
-          <input type="text" id="editEnd" value="${endVal}"
-                 list="editEndList" maxlength="5" placeholder="09:30" autocomplete="off" />
-          <datalist id="editEndList"></datalist>
+        <div class="edit-row edit-row-time">
+          <div style="flex:1">
+            <label class="field-label">開始時間</label>
+            <input type="text" id="editStart" value="${startVal}"
+                   list="editStartList" maxlength="5" placeholder="09:00" autocomplete="off" />
+            <datalist id="editStartList"></datalist>
+          </div>
+          <div class="time-arrow" style="margin-top:22px;">→</div>
+          <div style="flex:1">
+            <label class="field-label">結束時間</label>
+            <input type="text" id="editEnd" value="${endVal}"
+                   list="editEndList" maxlength="5" placeholder="09:30" autocomplete="off" />
+            <datalist id="editEndList"></datalist>
+          </div>
         </div>
         <div class="edit-row">
           <label class="field-label">患者姓名</label>
           <input type="text" id="editPatientName" value="${escHtml(currentPatientName)}" placeholder="患者姓名" />
         </div>
         <div class="edit-row">
+          <label class="field-label">聯絡電話 <span class="optional">（選填）</span></label>
+          <input type="tel" id="editPhone" value="${escHtml(currentPhone)}" placeholder="09xx-xxxxxx" />
+        </div>
+        <div class="edit-row">
           <label class="field-label">主治醫師</label>
           <select id="editDoctor">
             ${doctorOptions}
           </select>
+        </div>
+        <div class="edit-row">
+          <label class="field-label">就診類型</label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="editVisitType" value="初診" ${currentVisitType === '初診' ? 'checked' : ''} />
+              <span class="radio-box">初診</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="editVisitType" value="複診" ${currentVisitType === '複診' ? 'checked' : ''} />
+              <span class="radio-box">複診</span>
+            </label>
+          </div>
+        </div>
+        <div class="edit-row">
+          <label class="field-label">約診者</label>
+          <div class="booker-row" id="editBookerChips"></div>
         </div>
         <div class="edit-row">
           <label class="field-label">主訴 / 症狀</label>
@@ -793,6 +855,10 @@ function editAppointment(eventId) {
     const dl = document.getElementById(id);
     all.forEach(t => { const o = document.createElement('option'); o.value = t; dl.appendChild(o); });
   });
+
+  // 渲染約診者 chips
+  renderEditBookerChips();
+
   document.getElementById('successModal').classList.add('open');
 }
 
@@ -812,6 +878,9 @@ async function saveEditedAppointment(eventId) {
   const ev   = eventsCache[eventId] || {};
   const meta = getEventMeta(ev);
 
+  const editedPhone = document.getElementById('editPhone')?.value.trim() || '';
+  const editedVisitType = document.querySelector('input[name="editVisitType"]:checked')?.value || meta.visit_type || '複診';
+
   const payload = {
     date,
     start_time:   `${pad(sh)}:${pad(sm)}`,
@@ -819,8 +888,10 @@ async function saveEditedAppointment(eventId) {
     // 永遠帶醫師、患者、就診類型、主訴，讓後端能正確重建 summary / description
     doctor:       selDoctor,
     patient_name: document.getElementById('editPatientName')?.value.trim() || getPatientNameFromEvent(ev),
-    visit_type:   meta.visit_type,
+    visit_type:   editedVisitType,
     complaint:    newComplaint,
+    phone:        editedPhone || null,
+    booker:       editSelectedBooker || null,
   };
 
   const btn = document.getElementById('editSaveBtn');

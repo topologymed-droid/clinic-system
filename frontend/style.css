@@ -1216,6 +1216,37 @@ textarea { resize: vertical; min-height: 76px; }
 .patient-hint button:hover { background: #ffe97a; }
 
 /* ─── Edit Doctor Select ──────────────────────────────────────────────────── */
+.edit-row-time {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.edit-row input[type="tel"] {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid var(--warm-border);
+  border-radius: 9px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text-main);
+  background: var(--warm-bg);
+  transition: border-color .15s, box-shadow .15s;
+}
+.edit-row input[type="tel"]:focus {
+  outline: none;
+  border-color: var(--teal);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(74,155,142,.13);
+}
+.edit-row .radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.edit-row .booker-row {
+  margin-bottom: 0;
+}
+
 .edit-row select {
   width: 100%;
   padding: 9px 12px;
