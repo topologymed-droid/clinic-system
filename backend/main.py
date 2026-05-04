@@ -494,16 +494,23 @@ def get_appointments_range(start: str, end: str):
 
         all_events = []
         for cal_id in [CALENDAR_MAIN, CALENDAR_SU]:
-            result = service.events().list(
-                calendarId=cal_id,
-                timeMin=time_min,
-                timeMax=time_max,
-                singleEvents=True,
-                orderBy='startTime',
-            ).execute()
-            for ev in result.get('items', []):
-                ev['_isSuCalendar'] = (cal_id == CALENDAR_SU)
-                all_events.append(ev)
+            page_token = None
+            while True:
+                result = service.events().list(
+                    calendarId=cal_id,
+                    timeMin=time_min,
+                    timeMax=time_max,
+                    singleEvents=True,
+                    orderBy='startTime',
+                    maxResults=500,
+                    pageToken=page_token,
+                ).execute()
+                for ev in result.get('items', []):
+                    ev['_isSuCalendar'] = (cal_id == CALENDAR_SU)
+                    all_events.append(ev)
+                page_token = result.get('nextPageToken')
+                if not page_token:
+                    break
 
         all_events.sort(key=lambda e: e.get('start', {}).get('dateTime', e.get('start', {}).get('date', '')))
         return all_events
