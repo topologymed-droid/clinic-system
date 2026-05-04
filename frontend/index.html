@@ -62,13 +62,13 @@
         <div class="time-row">
           <div>
             <label class="field-label" style="margin-bottom:5px;font-size:11px;">開始</label>
-            <input type="text" id="startTime" list="startTimeList" placeholder="09:00" maxlength="5" autocomplete="off" required />
+            <input type="text" id="startTime" list="startTimeList" placeholder="09:00" maxlength="5" autocomplete="off" required onclick="this.select()" />
             <datalist id="startTimeList"></datalist>
           </div>
           <div class="time-arrow">→</div>
           <div>
             <label class="field-label" style="margin-bottom:5px;font-size:11px;">結束</label>
-            <input type="text" id="endTime" list="endTimeList" placeholder="09:30" maxlength="5" autocomplete="off" required />
+            <input type="text" id="endTime" list="endTimeList" placeholder="09:30" maxlength="5" autocomplete="off" required onclick="this.select()" />
             <datalist id="endTimeList"></datalist>
           </div>
         </div>

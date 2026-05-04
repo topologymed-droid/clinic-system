@@ -795,14 +795,14 @@ function editAppointment(eventId) {
           <div style="flex:1">
             <label class="field-label">開始時間</label>
             <input type="text" id="editStart" value="${startVal}"
-                   list="editStartList" maxlength="5" placeholder="09:00" autocomplete="off" />
+                   list="editStartList" maxlength="5" placeholder="09:00" autocomplete="off" onclick="this.select()" />
             <datalist id="editStartList"></datalist>
           </div>
           <div class="time-arrow" style="margin-top:22px;">→</div>
           <div style="flex:1">
             <label class="field-label">結束時間</label>
             <input type="text" id="editEnd" value="${endVal}"
-                   list="editEndList" maxlength="5" placeholder="09:30" autocomplete="off" />
+                   list="editEndList" maxlength="5" placeholder="09:30" autocomplete="off" onclick="this.select()" />
             <datalist id="editEndList"></datalist>
           </div>
         </div>
