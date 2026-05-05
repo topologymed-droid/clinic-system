@@ -856,6 +856,11 @@ textarea { resize: vertical; min-height: 76px; }
   gap: 16px;
   margin-top: 4px;
 }
+/* 7個月視圖：前三個月一行，後四個月一行 → 維持4欄就好 */
+.mini-month-title.is-anchor {
+  background: var(--teal-light);
+  color: var(--teal-dark);
+}
 .mini-month { }
 .mini-month-title {
   font-size: 12px;
