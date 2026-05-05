@@ -1168,76 +1168,60 @@ function setCalView(view) {
 }
 
 function calNavPrev() {
-  if (calView === 'year') {
-    calAnchorMonth--;
-    if (calAnchorMonth < 0) { calAnchorMonth = 11; calAnchorYear--; }
-    renderCalendar();
-  } else { changeMonth(-1); }
+  if (calView === 'year') { calYear--; renderCalendar(); }
+  else changeMonth(-1);
 }
 function calNavNext() {
-  if (calView === 'year') {
-    calAnchorMonth++;
-    if (calAnchorMonth > 11) { calAnchorMonth = 0; calAnchorYear++; }
-    renderCalendar();
-  } else { changeMonth(1); }
+  if (calView === 'year') { calYear++; renderCalendar(); }
+  else changeMonth(1);
 }
 
 async function renderCalendar() {
   if (calView === 'year') {
-    await renderYearCalendar(); // 標題在 renderYearCalendar 內設定
+    document.getElementById('calMonthTitle').textContent = `${calYear} 年`;
+    await renderYearCalendar();
   } else {
     document.getElementById('calMonthTitle').textContent = `${calYear} 年 ${calMonth + 1} 月`;
     await renderMonthCalendar();
   }
 }
 
-// ── 年視圖（7個月滾動窗口）────────────────────────────────────────────────────
+// ── 年視圖 ────────────────────────────────────────────────────────────────────
 async function renderYearCalendar() {
   const yearGrid = document.getElementById('yearGrid');
   yearGrid.innerHTML = '<p class="placeholder-text" style="grid-column:1/-1">載入中…</p>';
 
-  // 計算7個月：前一個月 + 當月 + 後五個月
-  const windowMonths = [];
-  for (let i = -1; i <= 5; i++) {
-    let y = calAnchorYear, m = calAnchorMonth + i;
-    while (m < 0)  { m += 12; y--; }
-    while (m > 11) { m -= 12; y++; }
-    windowMonths.push({ year: y, month: m });
-  }
-  const first = windowMonths[0];
-  const last  = windowMonths[windowMonths.length - 1];
-
-  // 更新標題
-  const MONTHS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-  const titleText = first.year === last.year
-    ? `${first.year} 年 ${MONTHS[first.month]} – ${MONTHS[last.month]}`
-    : `${first.year} 年 ${MONTHS[first.month]} – ${last.year} 年 ${MONTHS[last.month]}`;
-  document.getElementById('calMonthTitle').textContent = titleText;
-
-  // 抓資料
-  const startStr = `${first.year}-${pad(first.month + 1)}-01`;
-  const lastDay  = new Date(last.year, last.month + 1, 0);
-  const endStr   = localDateStr(lastDay);
+  // 抓全年資料
   try {
-    const res    = await fetch(`${API}/api/appointments/range?start=${startStr}&end=${endStr}`);
+    const res    = await fetch(`${API}/api/appointments/range?start=${calYear}-01-01&end=${calYear}-12-31`);
     const events = await res.json();
     calEvents = groupByDate(events);
   } catch { calEvents = {}; }
 
   yearGrid.innerHTML = '';
-  const today = localDateStr(new Date());
+  const MONTHS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  const today   = localDateStr(new Date());
+  const todayD  = new Date();
 
-  windowMonths.forEach(({ year: yr, month: m }) => {
+  // 「剩Xh」只顯示在今天前1個月~後5個月之間
+  const winStart = new Date(todayD.getFullYear(), todayD.getMonth() - 1, 1);
+  const winEnd   = new Date(todayD.getFullYear(), todayD.getMonth() + 6, 0); // +5個月的最後一天
+
+  for (let m = 0; m < 12; m++) {
     const miniEl = document.createElement('div');
     miniEl.className = 'mini-month';
+
+    // 判斷此月是否在顯示「剩Xh」的窗口內
+    const monthStart = new Date(calYear, m, 1);
+    const monthEnd   = new Date(calYear, m + 1, 0);
+    const inWindow   = monthStart <= winEnd && monthEnd >= winStart;
 
     // 月份標題 → 點擊切換到月視圖
     const titleEl = document.createElement('div');
     titleEl.className = 'mini-month-title';
-    titleEl.textContent = yr === calAnchorYear ? MONTHS[m] : `${yr}年${MONTHS[m]}`;
-    if (yr === calAnchorYear && m === calAnchorMonth) titleEl.classList.add('is-anchor');
+    titleEl.textContent = MONTHS[m];
+    if (inWindow) titleEl.classList.add('is-anchor');
     titleEl.addEventListener('click', () => {
-      calYear  = yr;
       calMonth = m;
       setCalView('month');
     });
@@ -1253,8 +1237,8 @@ async function renderYearCalendar() {
     // 日期格
     const gridEl  = document.createElement('div');
     gridEl.className = 'mini-grid';
-    const firstDay = new Date(yr, m, 1);
-    const lastDayD = new Date(yr, m + 1, 0);
+    const firstDay = new Date(calYear, m, 1);
+    const lastDay  = new Date(calYear, m + 1, 0);
     const dow0     = firstDay.getDay();
 
     for (let i = 0; i < dow0; i++) {
@@ -1262,9 +1246,9 @@ async function renderYearCalendar() {
       b.className = 'mini-day other-month';
       gridEl.appendChild(b);
     }
-    for (let d = 1; d <= lastDayD.getDate(); d++) {
-      const dateStr = `${yr}-${pad(m+1)}-${pad(d)}`;
-      const dow     = new Date(yr, m, d).getDay();
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+      const dateStr = `${calYear}-${pad(m+1)}-${pad(d)}`;
+      const dow     = new Date(calYear, m, d).getDay();
       const evs     = calEvents[dateStr] || [];
 
       const cell = document.createElement('div');
@@ -1280,6 +1264,7 @@ async function renderYearCalendar() {
       cell.appendChild(numEl);
 
       if (evs.length > 0) {
+        // 彩色小點（全年皆顯示）
         const dotsEl = document.createElement('div');
         dotsEl.className = 'mini-dots';
         evs.slice(0, 3).forEach(ev => {
@@ -1290,11 +1275,14 @@ async function renderYearCalendar() {
         });
         cell.appendChild(dotsEl);
 
-        const { text, cls } = freeMiniLabel(evs);
-        const miniF = document.createElement('div');
-        miniF.className = `mini-free ${cls}`;
-        miniF.textContent = text;
-        cell.appendChild(miniF);
+        // 剩餘時間（只在7個月窗口內顯示）
+        if (inWindow) {
+          const { text, cls } = freeMiniLabel(evs);
+          const miniF = document.createElement('div');
+          miniF.className = `mini-free ${cls}`;
+          miniF.textContent = text;
+          cell.appendChild(miniF);
+        }
       }
 
       cell.addEventListener('click', () => selectCalDay(dateStr, evs));
@@ -1305,7 +1293,7 @@ async function renderYearCalendar() {
     miniEl.appendChild(wdEl);
     miniEl.appendChild(gridEl);
     yearGrid.appendChild(miniEl);
-  });
+  }
 }
 
 // ── 月視圖 ────────────────────────────────────────────────────────────────────
