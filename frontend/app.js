@@ -11,7 +11,7 @@ let calYear         = new Date().getFullYear();
 let calMonth        = new Date().getMonth(); // 0-indexed
 let calEvents       = {};  // { 'YYYY-MM-DD': [events] }
 let calSelectedDate = null;
-let calView         = 'year'; // 'year' | 'month'
+let calView         = 'month'; // 'year' | 'month'
 // 年視圖的錨點月份（決定滾動窗口的「當月」）
 let calAnchorYear   = new Date().getFullYear();
 let calAnchorMonth  = new Date().getMonth();
