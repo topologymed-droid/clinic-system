@@ -287,6 +287,22 @@ textarea { resize: vertical; min-height: 76px; }
 }
 .btn-icon:hover { background: var(--warm-beige); border-color: var(--teal-mid); }
 
+.btn-print {
+  background: none;
+  border: 1.5px solid var(--warm-border);
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  font-size: 15px;
+  color: var(--text-sub);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s, border-color .15s;
+}
+.btn-print:hover { background: #edf7f5; border-color: var(--teal); color: var(--teal); }
+
 .btn-danger-sm {
   padding: 4px 10px;
   background: var(--red-soft);

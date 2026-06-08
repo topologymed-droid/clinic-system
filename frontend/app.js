@@ -98,6 +98,7 @@ async function calGoToday() {
     document.getElementById('calDetailTitle').textContent =
       today.toLocaleDateString('zh-TW', { year:'numeric', month:'long', day:'numeric', weekday:'short' });
     document.getElementById('calAddBtn').style.display = 'inline-block';
+    document.getElementById('calPrintBtn').style.display = 'inline-block';
   }
 }
 
@@ -1423,6 +1424,7 @@ function selectCalDay(dateStr, evs) {
   document.getElementById('calDetailTitle').textContent =
     d.toLocaleDateString('zh-TW', { year:'numeric', month:'long', day:'numeric', weekday:'short' });
   document.getElementById('calAddBtn').style.display = 'inline-block';
+  document.getElementById('calPrintBtn').style.display = 'inline-block';
   renderAppointments(evs, document.getElementById('calDetailList'));
 }
 
@@ -1448,6 +1450,7 @@ function changeMonth(dir) {
   document.getElementById('calDetailTitle').textContent = '點選日期查看約診';
   document.getElementById('calDetailList').innerHTML = '<p class="placeholder-text">請點選左方日曆的日期</p>';
   document.getElementById('calAddBtn').style.display = 'none';
+  document.getElementById('calPrintBtn').style.display = 'none';
   renderCalendar();
 }
 
@@ -1581,4 +1584,99 @@ function showToast(msg, isError = false) {
   t.className   = `toast show${isError ? ' error' : ' ok'}`;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { t.className = 'toast'; }, 3500);
+}
+
+// ─── 列印患者清單 ─────────────────────────────────────────────────────────────
+function buildPrintHtml(date, events) {
+  const sorted = [...events]
+    .filter(ev => ev.start?.dateTime)
+    .sort((a, b) => new Date(a.start.dateTime) - new Date(b.start.dateTime));
+
+  if (!sorted.length) { showToast('此日沒有約診資料', true); return null; }
+
+  const dateLabel = new Date(date + 'T00:00:00').toLocaleDateString('zh-TW',
+    { year:'numeric', month:'long', day:'numeric', weekday:'long' });
+
+  const rows = sorted.map((ev, i) => {
+    const s  = new Date(ev.start.dateTime);
+    const e  = ev.end?.dateTime ? new Date(ev.end.dateTime) : null;
+    const t  = `${pad(s.getHours())}:${pad(s.getMinutes())}` +
+               (e ? `–${pad(e.getHours())}:${pad(e.getMinutes())}` : '');
+    const doc     = getDocFromSummary(ev.summary || '', ev);
+    const col     = getDocColor(doc);
+    const patient = getPatientNameFromEvent(ev);
+    const meta    = getEventMeta(ev);
+    const isNP    = meta.visit_type === '初診';
+    const bgRow   = i % 2 === 0 ? '#fff' : '#f7faf9';
+    return `<tr style="background:${bgRow}">
+      <td style="color:#555;font-size:10pt;white-space:nowrap;">${t}</td>
+      <td style="color:${col.bg};font-weight:700;">${escHtml(doc?.name || '')}</td>
+      <td style="font-weight:700;">${escHtml(patient)}${isNP ? ' <span style="font-size:8pt;background:#e74c3c;color:#fff;border-radius:3px;padding:1px 4px;vertical-align:middle;">NP</span>' : ''}</td>
+      <td style="color:#444;">${escHtml(meta.complaint || '')}</td>
+    </tr>`;
+  }).join('');
+
+  return `<!DOCTYPE html><html lang="zh-TW"><head>
+<meta charset="UTF-8">
+<title>雅言牙醫診所 ${dateLabel}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'PingFang TC','Microsoft JhengHei',sans-serif;padding:16mm 18mm;color:#222;font-size:11pt}
+  .hd{text-align:center;border-bottom:2.5px solid #4a9b8e;padding-bottom:12px;margin-bottom:16px}
+  .clinic{font-size:17pt;font-weight:800;color:#2d5a54;letter-spacing:2px}
+  .date{font-size:12pt;color:#444;margin-top:5px}
+  .count{font-size:9.5pt;color:#888;margin-top:3px}
+  table{width:100%;border-collapse:collapse;margin-top:4px}
+  th{background:#4a9b8e;color:#fff;padding:8px 10px;font-size:10pt;text-align:left;font-weight:700}
+  td{padding:7px 10px;border-bottom:1px solid #e5eeec;vertical-align:top}
+  .print-btn{margin-bottom:14px;padding:7px 22px;background:#4a9b8e;color:#fff;border:none;border-radius:8px;font-size:11pt;cursor:pointer;font-family:inherit}
+  .footer{margin-top:18px;text-align:right;font-size:8.5pt;color:#bbb}
+  @media print{.print-btn{display:none}tr{page-break-inside:avoid}}
+</style></head><body>
+<div class="hd">
+  <div class="clinic">🦷 雅言牙醫診所</div>
+  <div class="date">${dateLabel}</div>
+  <div class="count">共 ${sorted.length} 位患者</div>
+</div>
+<button class="print-btn" onclick="window.print()">🖨 列印</button>
+<table>
+  <thead><tr>
+    <th style="width:110px">時間</th>
+    <th style="width:110px">醫師</th>
+    <th style="width:90px">患者</th>
+    <th>主訴</th>
+  </tr></thead>
+  <tbody>${rows}</tbody>
+</table>
+<div class="footer">列印時間：${new Date().toLocaleString('zh-TW')}</div>
+</body></html>`;
+}
+
+// 新增約診頁面的列印按鈕
+async function printDayList() {
+  const date = document.getElementById('date').value;
+  if (!date) { showToast('請先選擇日期', true); return; }
+  try {
+    const res  = await fetch(`${API}/api/appointments?date=${date}`);
+    const evs  = await res.json();
+    const html = buildPrintHtml(date, evs);
+    if (!html) return;
+    const w = window.open('', '_blank');
+    w.document.write(html);
+    w.document.close();
+  } catch { showToast('載入失敗', true); }
+}
+
+// 月曆頁面的列印按鈕
+async function printCalDay() {
+  if (!calSelectedDate) { showToast('請先點選日期', true); return; }
+  try {
+    const res  = await fetch(`${API}/api/appointments?date=${calSelectedDate}`);
+    const evs  = await res.json();
+    const html = buildPrintHtml(calSelectedDate, evs);
+    if (!html) return;
+    const w = window.open('', '_blank');
+    w.document.write(html);
+    w.document.close();
+  } catch { showToast('載入失敗', true); }
 }
