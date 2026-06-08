@@ -303,6 +303,39 @@ textarea { resize: vertical; min-height: 76px; }
 }
 .btn-print:hover { background: #edf7f5; border-color: var(--teal); color: var(--teal); }
 
+.print-doc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.print-doc-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 2px solid var(--warm-border);
+  background: var(--warm-card);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+  user-select: none;
+}
+.print-doc-chip:has(input:checked) {
+  border-color: var(--doc-color, var(--teal));
+  background: var(--doc-light, var(--teal-light));
+  color: var(--doc-color, var(--teal-dark));
+}
+.print-doc-chip input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--doc-color, var(--teal));
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
 .btn-danger-sm {
   padding: 4px 10px;
   background: var(--red-soft);

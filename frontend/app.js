@@ -1587,15 +1587,21 @@ function showToast(msg, isError = false) {
 }
 
 // ─── 列印患者清單 ─────────────────────────────────────────────────────────────
-function buildPrintHtml(date, events) {
-  const sorted = [...events]
-    .filter(ev => ev.start?.dateTime)
-    .sort((a, b) => new Date(a.start.dateTime) - new Date(b.start.dateTime));
-
-  if (!sorted.length) { showToast('此日沒有約診資料', true); return null; }
+function buildPrintHtml(date, events, selectedDoctors) {
+  // 篩選醫師（null = 全部）
+  let filtered = [...events].filter(ev => ev.start?.dateTime);
+  if (selectedDoctors && selectedDoctors.length) {
+    filtered = filtered.filter(ev => {
+      const doc = getDocFromSummary(ev.summary || '', ev);
+      return selectedDoctors.includes(doc?.name || '');
+    });
+  }
+  const sorted = filtered.sort((a, b) => new Date(a.start.dateTime) - new Date(b.start.dateTime));
+  if (!sorted.length) { showToast('所選醫師當日沒有約診', true); return null; }
 
   const dateLabel = new Date(date + 'T00:00:00').toLocaleDateString('zh-TW',
     { year:'numeric', month:'long', day:'numeric', weekday:'long' });
+  const docLabel = selectedDoctors?.length ? selectedDoctors.join('、') : '全體醫師';
 
   const rows = sorted.map((ev, i) => {
     const s  = new Date(ev.start.dateTime);
@@ -1625,6 +1631,7 @@ function buildPrintHtml(date, events) {
   .hd{text-align:center;border-bottom:2.5px solid #4a9b8e;padding-bottom:12px;margin-bottom:16px}
   .clinic{font-size:17pt;font-weight:800;color:#2d5a54;letter-spacing:2px}
   .date{font-size:12pt;color:#444;margin-top:5px}
+  .sub{font-size:10pt;color:#666;margin-top:3px}
   .count{font-size:9.5pt;color:#888;margin-top:3px}
   table{width:100%;border-collapse:collapse;margin-top:4px}
   th{background:#4a9b8e;color:#fff;padding:8px 10px;font-size:10pt;text-align:left;font-weight:700}
@@ -1636,6 +1643,7 @@ function buildPrintHtml(date, events) {
 <div class="hd">
   <div class="clinic">🦷 雅言牙醫診所</div>
   <div class="date">${dateLabel}</div>
+  <div class="sub">${escHtml(docLabel)}</div>
   <div class="count">共 ${sorted.length} 位患者</div>
 </div>
 <button class="print-btn" onclick="window.print()">🖨 列印</button>
@@ -1652,18 +1660,75 @@ function buildPrintHtml(date, events) {
 </body></html>`;
 }
 
+// 顯示醫師選擇對話框，選好後列印
+function showPrintDialog(date, events) {
+  const allEvents = [...events].filter(ev => ev.start?.dateTime);
+  if (!allEvents.length) { showToast('此日沒有約診資料', true); return; }
+
+  // 找出當天出現的醫師（依順序去重）
+  const docMap = new Map();
+  allEvents.forEach(ev => {
+    const doc = getDocFromSummary(ev.summary || '', ev);
+    const name = doc?.name || '未知';
+    if (!docMap.has(name)) docMap.set(name, getDocColor(doc));
+  });
+  const docEntries = [...docMap.entries()]; // [[name, col], ...]
+
+  const checkboxes = docEntries.map(([name, col]) => `
+    <label class="print-doc-chip" style="--doc-color:${col.bg};--doc-light:${col.light}">
+      <input type="checkbox" name="printDoc" value="${escHtml(name)}" checked />
+      <span>${escHtml(name)}</span>
+    </label>`).join('');
+
+  const box = document.querySelector('.modal-box');
+  box.innerHTML = `
+    <div class="edit-box">
+      <h4>🖨 選擇列印範圍</h4>
+      <p style="font-size:12px;color:var(--text-sub);margin:6px 0 14px;">可多選，勾選的醫師才會印出</p>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+        <button class="btn-note-save" onclick="toggleAllPrintDocs(true)">全選</button>
+        <button class="btn-note-save" style="margin-left:6px;" onclick="toggleAllPrintDocs(false)">全消</button>
+      </div>
+      <div class="print-doc-list">${checkboxes}</div>
+      <div class="confirm-actions" style="margin-top:20px;">
+        <button class="btn-cancel-no" onclick="closeModal()">取消</button>
+        <button class="btn-primary" style="padding:9px 28px;font-size:13px;"
+          onclick="doPrint('${date}')">🖨 列印</button>
+      </div>
+    </div>`;
+
+  // 暫存事件資料供 doPrint 使用
+  window._printEvents = events;
+  document.getElementById('successModal').classList.add('open');
+}
+
+function toggleAllPrintDocs(checked) {
+  document.querySelectorAll('input[name="printDoc"]').forEach(cb => cb.checked = checked);
+}
+
+function doPrint(date) {
+  const selected = [...document.querySelectorAll('input[name="printDoc"]:checked')]
+    .map(cb => cb.value);
+  if (!selected.length) { showToast('請至少選擇一位醫師', true); return; }
+  // 若全選則傳 null（不篩選）
+  const allNames = [...document.querySelectorAll('input[name="printDoc"]')].map(cb => cb.value);
+  const filterDocs = selected.length === allNames.length ? null : selected;
+  const html = buildPrintHtml(date, window._printEvents || [], filterDocs);
+  if (!html) return;
+  closeModal();
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+}
+
 // 新增約診頁面的列印按鈕
 async function printDayList() {
   const date = document.getElementById('date').value;
   if (!date) { showToast('請先選擇日期', true); return; }
   try {
-    const res  = await fetch(`${API}/api/appointments?date=${date}`);
-    const evs  = await res.json();
-    const html = buildPrintHtml(date, evs);
-    if (!html) return;
-    const w = window.open('', '_blank');
-    w.document.write(html);
-    w.document.close();
+    const res = await fetch(`${API}/api/appointments?date=${date}`);
+    const evs = await res.json();
+    showPrintDialog(date, evs);
   } catch { showToast('載入失敗', true); }
 }
 
@@ -1671,12 +1736,8 @@ async function printDayList() {
 async function printCalDay() {
   if (!calSelectedDate) { showToast('請先點選日期', true); return; }
   try {
-    const res  = await fetch(`${API}/api/appointments?date=${calSelectedDate}`);
-    const evs  = await res.json();
-    const html = buildPrintHtml(calSelectedDate, evs);
-    if (!html) return;
-    const w = window.open('', '_blank');
-    w.document.write(html);
-    w.document.close();
+    const res = await fetch(`${API}/api/appointments?date=${calSelectedDate}`);
+    const evs = await res.json();
+    showPrintDialog(calSelectedDate, evs);
   } catch { showToast('載入失敗', true); }
 }
