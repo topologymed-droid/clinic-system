@@ -3,6 +3,7 @@
 const API = ''; // 自動使用當前網域，Mac localhost 或 ngrok 都能運作
 
 let doctorsList       = [];
+let complaintPresets  = [];
 let bookersList       = [];
 let selectedBooker    = '';
 let editSelectedBooker = '';
@@ -23,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
   fetchDoctors();
   fetchBookers();
   fetchPatientNames();
+  fetchComplaintPresets();
   initPatientAutocomplete();
   loadAppointments();
 
@@ -403,6 +405,162 @@ function refreshDoctorSelect() {
   sel.innerHTML = '<option value="">請選擇醫師</option>' +
     doctorsList.map(d => `<option value="${escHtml(d.name)}">${escHtml(d.name)}</option>`).join('');
   if (prev) sel.value = prev;
+}
+
+// ─── Complaint Presets (快捷主訴) ──────────────────────────────────────────────
+async function fetchComplaintPresets() {
+  try {
+    const res = await fetch(`${API}/api/complaints`);
+    complaintPresets = await res.json();
+    renderComplaintShortcuts('complaint', 'complaintShortcuts');
+  } catch {}
+}
+
+// 渲染快捷主訴 chips（通用，可指定 textarea id 和容器 id）
+function renderComplaintShortcuts(textareaId, containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  // 快捷 chips
+  const chipsRow = document.createElement('div');
+  chipsRow.className = 'complaint-chips-row';
+
+  complaintPresets.forEach(p => {
+    const chip = document.createElement('div');
+    chip.className = 'complaint-chip';
+    chip.dataset.id = p.id;
+
+    const label = document.createElement('span');
+    label.className = 'complaint-chip-label';
+    label.textContent = p.text;
+    label.title = p.text;
+    label.onclick = () => insertComplaint(textareaId, p.text);
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'complaint-chip-edit';
+    editBtn.textContent = '✏️';
+    editBtn.title = '編輯';
+    editBtn.onclick = (e) => { e.stopPropagation(); startEditComplaint(chip, p, textareaId, containerId); };
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'complaint-chip-del';
+    delBtn.textContent = '✕';
+    delBtn.title = '刪除';
+    delBtn.onclick = async (e) => {
+      e.stopPropagation();
+      await fetch(`${API}/api/complaints/${p.id}`, { method: 'DELETE' });
+      complaintPresets = complaintPresets.filter(c => c.id !== p.id);
+      renderAllComplaintShortcuts();
+    };
+
+    chip.appendChild(label);
+    chip.appendChild(editBtn);
+    chip.appendChild(delBtn);
+    chipsRow.appendChild(chip);
+  });
+
+  // 新增按鈕
+  const addBtn = document.createElement('button');
+  addBtn.className = 'complaint-chip-add';
+  addBtn.textContent = '＋ 新增';
+  addBtn.onclick = () => showAddComplaintInput(chipsRow, textareaId, containerId);
+  chipsRow.appendChild(addBtn);
+
+  container.appendChild(chipsRow);
+}
+
+// 在所有已渲染的快捷主訴容器同步更新
+function renderAllComplaintShortcuts() {
+  renderComplaintShortcuts('complaint', 'complaintShortcuts');
+  if (document.getElementById('editComplaintShortcuts'))
+    renderComplaintShortcuts('editComplaint', 'editComplaintShortcuts');
+}
+
+// 插入文字到目標 textarea
+function insertComplaint(textareaId, text) {
+  const ta = document.getElementById(textareaId);
+  if (!ta) return;
+  const cur = ta.value.trim();
+  ta.value = cur ? cur + ' ' + text : text;
+  ta.focus();
+}
+
+// 進入編輯模式
+function startEditComplaint(chip, preset, textareaId, containerId) {
+  const label = chip.querySelector('.complaint-chip-label');
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = preset.text;
+  input.className = 'complaint-chip-input';
+
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'complaint-chip-save';
+  saveBtn.textContent = '✓';
+  saveBtn.onclick = async () => {
+    const newText = input.value.trim();
+    if (!newText) return;
+    await fetch(`${API}/api/complaints/${preset.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: newText }),
+    });
+    const c = complaintPresets.find(c => c.id === preset.id);
+    if (c) c.text = newText;
+    renderAllComplaintShortcuts();
+  };
+  input.onkeydown = e => { if (e.key === 'Enter') saveBtn.click(); if (e.key === 'Escape') renderAllComplaintShortcuts(); };
+
+  chip.innerHTML = '';
+  chip.appendChild(input);
+  chip.appendChild(saveBtn);
+  input.focus();
+  input.select();
+}
+
+// 顯示新增輸入框
+function showAddComplaintInput(chipsRow, textareaId, containerId) {
+  const existing = chipsRow.querySelector('.new-complaint-input');
+  if (existing) { existing.focus(); return; }
+
+  const wrap = document.createElement('div');
+  wrap.className = 'complaint-chip complaint-chip-new';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.placeholder = '輸入快捷主訴…';
+  input.className = 'complaint-chip-input new-complaint-input';
+  input.maxLength = 40;
+
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'complaint-chip-save';
+  saveBtn.textContent = '✓';
+  saveBtn.onclick = async () => {
+    const text = input.value.trim();
+    if (!text) { input.focus(); return; }
+    const res = await fetch(`${API}/api/complaints`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    const newPreset = await res.json();
+    complaintPresets.push(newPreset);
+    renderAllComplaintShortcuts();
+  };
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'complaint-chip-del';
+  cancelBtn.textContent = '✕';
+  cancelBtn.onclick = () => wrap.remove();
+
+  input.onkeydown = e => { if (e.key === 'Enter') saveBtn.click(); if (e.key === 'Escape') wrap.remove(); };
+
+  wrap.appendChild(input);
+  wrap.appendChild(saveBtn);
+  wrap.appendChild(cancelBtn);
+  chipsRow.insertBefore(wrap, chipsRow.querySelector('.complaint-chip-add'));
+  input.focus();
 }
 
 // ─── Patient Autocomplete ─────────────────────────────────────────────────────
@@ -916,6 +1074,7 @@ function editAppointment(eventId) {
         <div class="edit-row">
           <label class="field-label">主訴 / 症狀</label>
           <textarea id="editComplaint" rows="3" placeholder="請描述主訴或症狀…">${escHtml(currentComplaint)}</textarea>
+          <div id="editComplaintShortcuts" class="complaint-shortcuts"></div>
         </div>
       </div>
       <div class="confirm-actions">
@@ -938,6 +1097,7 @@ function editAppointment(eventId) {
 
   // 渲染約診者 chips
   renderEditBookerChips();
+  renderComplaintShortcuts('editComplaint', 'editComplaintShortcuts');
 
   document.getElementById('successModal').classList.add('open');
 }

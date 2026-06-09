@@ -24,6 +24,7 @@ DOCTORS_FILE     = os.path.join(BASE_DIR, 'doctors.json')
 HISTORY_FILE     = os.path.join(BASE_DIR, 'history.json')
 BOOKERS_FILE     = os.path.join(BASE_DIR, 'bookers.json')
 PATIENTS_FILE    = os.path.join(BASE_DIR, 'patients.json')
+COMPLAINTS_FILE  = os.path.join(BASE_DIR, 'complaints.json')
 TOKEN_FILE       = os.path.join(BASE_DIR, 'token.json')
 CREDENTIALS_FILE = os.path.join(BASE_DIR, 'credentials.json')
 
@@ -35,9 +36,10 @@ GITHUB_REPO  = 'topologymed-droid/clinic-system'
 
 # 需要自動同步到 GitHub 的檔案（Railway 重新部署時不會遺失）
 SYNC_FILES = {
-    DOCTORS_FILE:  'backend/doctors.json',
-    BOOKERS_FILE:  'backend/bookers.json',
-    PATIENTS_FILE: 'backend/patients.json',
+    DOCTORS_FILE:    'backend/doctors.json',
+    BOOKERS_FILE:    'backend/bookers.json',
+    PATIENTS_FILE:   'backend/patients.json',
+    COMPLAINTS_FILE: 'backend/complaints.json',
 }
 
 def _push_to_github(local_path: str, repo_path: str):
@@ -341,6 +343,54 @@ def delete_booker(booker_id: str):
     bookers = load_bookers()
     bookers = [b for b in bookers if b['id'] != booker_id]
     save_bookers(bookers)
+    return {"status": "ok"}
+
+# ─── Complaint Presets ────────────────────────────────────────────────────────
+def load_complaints():
+    if not os.path.exists(COMPLAINTS_FILE):
+        save_complaints([])
+        return []
+    with open(COMPLAINTS_FILE, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+def save_complaints(complaints):
+    with open(COMPLAINTS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(complaints, f, ensure_ascii=False, indent=2)
+    sync_to_github(COMPLAINTS_FILE)
+
+@app.get("/api/complaints")
+def get_complaints():
+    return load_complaints()
+
+@app.post("/api/complaints")
+def add_complaint(body: dict):
+    text = (body.get('text') or '').strip()
+    if not text: raise HTTPException(status_code=400, detail="不能為空")
+    complaints = load_complaints()
+    existing_ids = [int(c['id']) for c in complaints if str(c['id']).isdigit()]
+    new_id = str(max(existing_ids, default=0) + 1)
+    new_c = {"id": new_id, "text": text}
+    complaints.append(new_c)
+    save_complaints(complaints)
+    return new_c
+
+@app.patch("/api/complaints/{complaint_id}")
+def update_complaint(complaint_id: str, body: dict):
+    text = (body.get('text') or '').strip()
+    if not text: raise HTTPException(status_code=400, detail="不能為空")
+    complaints = load_complaints()
+    for c in complaints:
+        if c['id'] == complaint_id:
+            c['text'] = text
+            break
+    save_complaints(complaints)
+    return {"status": "ok"}
+
+@app.delete("/api/complaints/{complaint_id}")
+def delete_complaint_preset(complaint_id: str):
+    complaints = load_complaints()
+    complaints = [c for c in complaints if c['id'] != complaint_id]
+    save_complaints(complaints)
     return {"status": "ok"}
 
 # ─── Patient Routes ───────────────────────────────────────────────────────────
