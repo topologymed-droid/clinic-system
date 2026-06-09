@@ -349,11 +349,60 @@ async function addDoctor() {
 }
 
 async function deleteDoctor(id, name) {
-  if (!confirm(`確定要移除「${name}」？`)) return;
-  try {
-    await fetch(`${API}/api/doctors/${id}`, { method: 'DELETE' });
-    await fetchDoctors();
-  } catch { showToast('移除失敗', true); }
+  // 若有待刪醫師先確認刪除
+  if (doctorDeleteTimer) {
+    clearTimeout(doctorDeleteTimer);
+    doctorDeleteTimer = null;
+    if (lastDeletedDoctor) {
+      await fetch(`${API}/api/doctors/${lastDeletedDoctor.id}`, { method: 'DELETE' }).catch(() => {});
+      lastDeletedDoctor = null;
+    }
+  }
+
+  // 先從畫面移除（樂觀更新）
+  lastDeletedDoctor = doctorsList.find(d => d.id === id) || null;
+  doctorsList = doctorsList.filter(d => d.id !== id);
+  renderDoctorsPanel();
+  refreshDoctorSelect();
+
+  // 顯示倒數 toast
+  undoType = 'doctor';
+  showUndoToast(`🗑 已移除「${name}」`);
+
+  // 倒數結束 → 真正刪除
+  doctorDeleteTimer = setTimeout(async () => {
+    doctorDeleteTimer = null;
+    try {
+      await fetch(`${API}/api/doctors/${id}`, { method: 'DELETE' });
+      lastDeletedDoctor = null;
+    } catch {
+      showToast('移除失敗，已還原', true);
+      if (lastDeletedDoctor) { doctorsList.push(lastDeletedDoctor); renderDoctorsPanel(); refreshDoctorSelect(); }
+      lastDeletedDoctor = null;
+    }
+  }, UNDO_SECS * 1000);
+}
+
+async function undoDeleteDoctor() {
+  if (!lastDeletedDoctor) return;
+  clearTimeout(doctorDeleteTimer);
+  doctorDeleteTimer = null;
+  doctorsList.push(lastDeletedDoctor);
+  doctorsList.sort((a, b) => Number(a.id) - Number(b.id));
+  lastDeletedDoctor = null;
+  renderDoctorsPanel();
+  refreshDoctorSelect();
+  hideUndoToast();
+  showToast('✅ 已復原');
+}
+
+function refreshDoctorSelect() {
+  const sel = document.getElementById('doctor');
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">請選擇醫師</option>' +
+    doctorsList.map(d => `<option value="${escHtml(d.name)}">${escHtml(d.name)}</option>`).join('');
+  if (prev) sel.value = prev;
 }
 
 // ─── Patient Autocomplete ─────────────────────────────────────────────────────
@@ -614,8 +663,11 @@ function renderAppointments(events, container) {
   }).join('');
 }
 
-let lastDeleted  = null; // { event, calendar_id }
-let eventsCache  = {}; // eventId → event object
+let lastDeleted       = null; // { event, calendar_id }
+let lastDeletedDoctor = null; // { id, name, data }
+let doctorDeleteTimer = null;
+let undoType          = 'appointment'; // 'appointment' | 'doctor'
+let eventsCache       = {}; // eventId → event object
 
 // ─── 動態醫師調色盤（無限擴充）─────────────────────────────────────────────
 const DOCTOR_PALETTE = [
@@ -677,8 +729,9 @@ function cancelAppointment(eventId, summary) {
         const result = await res.json();
         if (!res.ok) throw new Error(result.detail);
         lastDeleted = { event: result.event, calendar_id: result.calendar_id };
+        undoType = 'appointment';
         await reloadAllViews();
-        showUndoToast(summary);
+        showUndoToast(`🗑 約診已取消`);
       } catch (e) { showToast('取消失敗：' + e.message, true); }
     }
   );
@@ -948,14 +1001,15 @@ async function saveEditedAppointment(eventId) {
   }
 }
 
-function showUndoToast(summary) {
+function showUndoToast(msg) {
   clearTimeout(undoTimer);
   const toast = document.getElementById('undoToast');
   const fill  = document.getElementById('undoBarFill');
+  const msgEl = document.querySelector('#undoToast .undo-msg span');
+  if (msgEl) msgEl.textContent = msg;
   toast.classList.add('show');
   fill.style.transition = 'none';
   fill.style.width = '100%';
-  // 觸發 reflow 讓 transition 重置
   fill.offsetWidth;
   fill.style.transition = `width ${UNDO_SECS}s linear`;
   fill.style.width = '0%';
@@ -968,6 +1022,12 @@ function showUndoToast(summary) {
 function hideUndoToast() {
   clearTimeout(undoTimer);
   document.getElementById('undoToast').classList.remove('show');
+}
+
+// 統一復原入口
+function undoAction() {
+  if (undoType === 'doctor') undoDeleteDoctor();
+  else undoDelete();
 }
 
 // ─── Form ─────────────────────────────────────────────────────────────────────
@@ -1152,7 +1212,8 @@ function cancelAppointmentFromSearch(eventId, summary) {
       const result = await res.json();
       if (!res.ok) throw new Error(result.detail);
       lastDeleted = { event: result.event, calendar_id: result.calendar_id };
-      showUndoToast(summary);
+      undoType = 'appointment';
+      showUndoToast(`🗑 約診已取消`);
       doSearch(); // 重新搜尋更新結果
     } catch(e) { showToast('取消失敗：' + e.message, true); }
   });
