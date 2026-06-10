@@ -447,12 +447,14 @@ function renderComplaintShortcuts(textareaId, containerId) {
     label.onclick = () => insertComplaint(textareaId, p.text);
 
     const editBtn = document.createElement('button');
+    editBtn.type = 'button';
     editBtn.className = 'complaint-chip-edit';
     editBtn.textContent = '✏️';
     editBtn.title = '編輯';
     editBtn.onclick = (e) => { e.stopPropagation(); startEditComplaint(chip, p, textareaId, containerId); };
 
     const delBtn = document.createElement('button');
+    delBtn.type = 'button';
     delBtn.className = 'complaint-chip-del';
     delBtn.textContent = '✕';
     delBtn.title = '刪除';
@@ -471,6 +473,7 @@ function renderComplaintShortcuts(textareaId, containerId) {
 
   // 新增按鈕
   const addBtn = document.createElement('button');
+  addBtn.type = 'button';
   addBtn.className = 'complaint-chip-add';
   addBtn.textContent = '＋ 新增';
   addBtn.onclick = () => showAddComplaintInput(chipsRow, textareaId, containerId);
@@ -504,6 +507,7 @@ function startEditComplaint(chip, preset, textareaId, containerId) {
   input.className = 'complaint-chip-input';
 
   const saveBtn = document.createElement('button');
+  saveBtn.type = 'button';
   saveBtn.className = 'complaint-chip-save';
   saveBtn.textContent = '✓';
   saveBtn.onclick = async () => {
@@ -542,6 +546,7 @@ function showAddComplaintInput(chipsRow, textareaId, containerId) {
   input.maxLength = 40;
 
   const saveBtn = document.createElement('button');
+  saveBtn.type = 'button';
   saveBtn.className = 'complaint-chip-save';
   saveBtn.textContent = '✓';
   saveBtn.onclick = async () => {
@@ -558,6 +563,7 @@ function showAddComplaintInput(chipsRow, textareaId, containerId) {
   };
 
   const cancelBtn = document.createElement('button');
+  cancelBtn.type = 'button';
   cancelBtn.className = 'complaint-chip-del';
   cancelBtn.textContent = '✕';
   cancelBtn.onclick = () => wrap.remove();
