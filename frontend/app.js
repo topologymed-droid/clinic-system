@@ -124,6 +124,7 @@ function timeSlots(fromH = 9, toH = 22) {
 
 // 讓 datalist 時間欄位聚焦時顯示全部時段（不受現有值過濾），離開時自動還原
 function initTimeInputShowAll(inputEl) {
+  if (!inputEl) return; // 防止 null crash
   let savedVal = '';
   inputEl.addEventListener('focus', () => {
     savedVal = inputEl.value;
@@ -411,9 +412,10 @@ function refreshDoctorSelect() {
 async function fetchComplaintPresets() {
   try {
     const res = await fetch(`${API}/api/complaints`);
-    complaintPresets = await res.json();
-    renderComplaintShortcuts('complaint', 'complaintShortcuts');
+    if (res.ok) complaintPresets = await res.json();
   } catch {}
+  // 無論成功或失敗都渲染（失敗時 complaintPresets 維持 []）
+  renderComplaintShortcuts('complaint', 'complaintShortcuts');
 }
 
 // 渲染快捷主訴 chips（通用，可指定 textarea id 和容器 id）
@@ -422,6 +424,12 @@ function renderComplaintShortcuts(textareaId, containerId) {
   if (!container) return;
 
   container.innerHTML = '';
+
+  // 快捷標籤
+  const labelEl = document.createElement('div');
+  labelEl.className = 'complaint-shortcuts-label';
+  labelEl.textContent = '快捷主訴：';
+  container.appendChild(labelEl);
 
   // 快捷 chips
   const chipsRow = document.createElement('div');
@@ -1088,6 +1096,7 @@ function editAppointment(eventId) {
   // 填入時間選項
   ['editStartList','editEndList'].forEach(id => {
     const dl = document.getElementById(id);
+    if (!dl) return;
     all.forEach(t => { const o = document.createElement('option'); o.value = t; dl.appendChild(o); });
   });
 

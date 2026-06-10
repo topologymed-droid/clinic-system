@@ -1178,7 +1178,11 @@ textarea { resize: vertical; min-height: 76px; }
 }
 
 /* ─── Complaint Shortcuts (快捷主訴) ─────────────────────────────────────── */
-.complaint-shortcuts { margin-top: 6px; }
+.complaint-shortcuts { margin-top: 8px; }
+.complaint-shortcuts-label {
+  font-size: 11px; font-weight: 700; color: var(--text-sub);
+  letter-spacing: .4px; text-transform: uppercase; margin-bottom: 5px;
+}
 .complaint-chips-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .complaint-chip {
   display: inline-flex; align-items: center; gap: 3px;
