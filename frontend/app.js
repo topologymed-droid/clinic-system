@@ -522,7 +522,7 @@ function startEditComplaint(chip, preset, textareaId, containerId) {
     if (c) c.text = newText;
     renderAllComplaintShortcuts();
   };
-  input.onkeydown = e => { if (e.key === 'Enter') saveBtn.click(); if (e.key === 'Escape') renderAllComplaintShortcuts(); };
+  input.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); } if (e.key === 'Escape') renderAllComplaintShortcuts(); };
 
   chip.innerHTML = '';
   chip.appendChild(input);
@@ -568,7 +568,7 @@ function showAddComplaintInput(chipsRow, textareaId, containerId) {
   cancelBtn.textContent = '✕';
   cancelBtn.onclick = () => wrap.remove();
 
-  input.onkeydown = e => { if (e.key === 'Enter') saveBtn.click(); if (e.key === 'Escape') wrap.remove(); };
+  input.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); } if (e.key === 'Escape') wrap.remove(); };
 
   wrap.appendChild(input);
   wrap.appendChild(saveBtn);
