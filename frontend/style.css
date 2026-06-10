@@ -1186,35 +1186,36 @@ textarea { resize: vertical; min-height: 76px; }
 .complaint-chips-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .complaint-chip {
   display: inline-flex; align-items: center; gap: 3px;
-  background: var(--warm-card); border: 1.5px solid var(--warm-border);
-  border-radius: 20px; padding: 3px 6px 3px 10px; font-size: 12px;
+  background: #3a3a3a; border: 1.5px solid #555;
+  border-radius: 20px; padding: 4px 7px 4px 11px; font-size: 12px;
   transition: border-color .15s, background .15s;
 }
-.complaint-chip:hover { border-color: var(--teal-mid); background: var(--teal-light); }
+.complaint-chip:hover { background: #4a9b8e; border-color: #4a9b8e; }
 .complaint-chip-label {
-  cursor: pointer; max-width: 120px; overflow: hidden;
+  cursor: pointer; max-width: 130px; overflow: hidden;
   text-overflow: ellipsis; white-space: nowrap;
-  color: var(--text-main); font-weight: 500;
+  color: #f0f0f0; font-weight: 500;
 }
+.complaint-chip:hover .complaint-chip-label { color: #fff; }
 .complaint-chip-edit, .complaint-chip-del, .complaint-chip-save {
   background: none; border: none; cursor: pointer;
-  font-size: 11px; padding: 0 2px; color: var(--text-hint); line-height: 1;
+  font-size: 11px; padding: 0 2px; color: #aaa; line-height: 1;
 }
 .complaint-chip-edit { opacity: 0; transition: opacity .15s; }
-.complaint-chip:hover .complaint-chip-edit { opacity: 1; }
-.complaint-chip-del:hover { color: #c03030; }
-.complaint-chip-save:hover { color: var(--teal); }
+.complaint-chip:hover .complaint-chip-edit { opacity: 1; color: #fff; }
+.complaint-chip-del:hover { color: #ff7070; }
+.complaint-chip-save:hover { color: #7de8c8; }
 .complaint-chip-input {
   border: none; outline: none; background: transparent;
-  font-size: 12px; font-family: inherit; color: var(--text-main); width: 120px; padding: 0;
+  font-size: 12px; font-family: inherit; color: #f0f0f0; width: 120px; padding: 0;
 }
 .complaint-chip-add {
-  background: none; border: 1.5px dashed var(--warm-border);
-  border-radius: 20px; padding: 3px 10px; font-size: 12px;
-  color: var(--text-sub); cursor: pointer; transition: border-color .15s, color .15s;
+  background: #2a2a2a; border: 1.5px dashed #555;
+  border-radius: 20px; padding: 4px 11px; font-size: 12px;
+  color: #aaa; cursor: pointer; transition: border-color .15s, color .15s, background .15s;
 }
-.complaint-chip-add:hover { border-color: var(--teal); color: var(--teal); }
-.complaint-chip-new { border-style: dashed; border-color: var(--teal-mid); background: var(--teal-light); }
+.complaint-chip-add:hover { background: #3a3a3a; border-color: #4a9b8e; color: #7de8c8; }
+.complaint-chip-new { border-style: dashed; border-color: #4a9b8e; background: #2d4a46; }
 
 .booker-chip {
   display: inline-flex;
