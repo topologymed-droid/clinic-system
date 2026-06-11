@@ -625,19 +625,24 @@ textarea { resize: vertical; min-height: 76px; }
   inset: 0;
   background: rgba(58,48,40,.45);
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
+  padding: 20px 0;
   z-index: 200;
+  overflow-y: auto;
 }
 .modal-backdrop.open { display: flex; }
 .modal-box {
   background: white;
   border-radius: 18px;
   padding: 38px 34px;
-  max-width: 380px;
-  width: 90%;
+  max-width: 420px;
+  width: 92%;
   text-align: center;
   box-shadow: var(--shadow-md);
   animation: popIn .22s cubic-bezier(.34,1.56,.64,1);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  margin: auto;
 }
 @keyframes popIn {
   from { transform: scale(.82); opacity: 0; }
