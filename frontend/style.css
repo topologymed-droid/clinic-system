@@ -366,6 +366,23 @@ textarea { resize: vertical; min-height: 76px; }
 }
 .appointments-list { flex: 1; }
 
+/* ─── Appointment Hover Tooltip ────────────────────────────────────────────── */
+.appt-tooltip {
+  position: fixed;
+  z-index: 999;
+  background: var(--warm-card);
+  border: 1.5px solid var(--warm-border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow: var(--shadow-md);
+  max-width: 260px;
+  min-width: 180px;
+  pointer-events: none;
+}
+.att-time  { font-size: 11px; font-weight: 700; color: var(--teal); margin-bottom: 4px; }
+.att-title { font-size: 13px; font-weight: 600; color: var(--text-main); margin-bottom: 6px; line-height: 1.4; }
+.att-desc  { font-size: 12px; color: var(--text-sub); border-top: 1px solid var(--warm-border); padding-top: 7px; line-height: 1.7; }
+
 /* ─── By-Doctor Grouped Layout ─────────────────────────────────────────────── */
 .appt-by-doctor { display: flex; flex-direction: column; gap: 14px; }
 

@@ -873,7 +873,8 @@ function renderAppointmentsByDoctor(events, container) {
           : '';
         const sumRaw = (ev.summary || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
         return `
-          <div class="appt-row-item" onclick="editAppointment('${ev.id}')">
+          <div class="appt-row-item" onclick="editAppointment('${ev.id}')"
+            onmouseenter="showApptTooltip(event,'${ev.id}')" onmouseleave="hideApptTooltip()">
             <span class="appt-row-time" style="color:${col.bg};">${start}${end ? '–'+end : ''}</span>
             <span class="appt-row-name">${escHtml(ev.summary||'')}</span>
             <div class="appt-row-actions">
@@ -892,6 +893,43 @@ function renderAppointmentsByDoctor(events, container) {
           <div class="appt-dr-rows">${rowsHtml}</div>
         </div>`;
     }).join('') + `</div>`;
+}
+
+// ─── Appointment Tooltip ──────────────────────────────────────────────────────
+function showApptTooltip(e, evId) {
+  const ev = eventsCache[evId];
+  if (!ev) return;
+  const start = ev.start?.dateTime
+    ? new Date(ev.start.dateTime).toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit', hour12:false })
+    : '--:--';
+  const end = ev.end?.dateTime
+    ? new Date(ev.end.dateTime).toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit', hour12:false })
+    : '';
+  const descLines = (ev.description || '').split('\n').filter(l => l.trim());
+  const descHtml  = descLines.map(l => `<div>${escHtml(l)}</div>`).join('');
+
+  const tt = document.getElementById('apptTooltip');
+  tt.innerHTML = `
+    <div class="att-time">${start}${end ? ' – ' + end : ''}</div>
+    <div class="att-title">${escHtml(ev.summary || '')}</div>
+    ${descHtml ? `<div class="att-desc">${descHtml}</div>` : ''}`;
+  tt.style.display = 'block';
+
+  const rect = e.currentTarget.getBoundingClientRect();
+  const TT_W = 260;
+  let left = rect.right + 10;
+  if (left + TT_W > window.innerWidth - 10) left = rect.left - TT_W - 10;
+  if (left < 10) left = 10;
+  let top = rect.top;
+  const ttH = tt.offsetHeight;
+  if (top + ttH > window.innerHeight - 10) top = window.innerHeight - ttH - 10;
+  if (top < 10) top = 10;
+  tt.style.left = left + 'px';
+  tt.style.top  = top  + 'px';
+}
+function hideApptTooltip() {
+  const tt = document.getElementById('apptTooltip');
+  if (tt) tt.style.display = 'none';
 }
 
 let lastDeleted       = null; // { event, calendar_id }
