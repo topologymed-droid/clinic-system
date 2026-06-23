@@ -25,6 +25,7 @@
   <button class="tab active" id="tab-form"     onclick="switchTab('form')">📋 新增約診</button>
   <button class="tab"        id="tab-calendar" onclick="switchTab('calendar')">📅 月曆檢視</button>
   <button class="tab"        id="tab-search"   onclick="switchTab('search')">🔍 查詢患者</button>
+  <button class="tab"        id="tab-doctors"  onclick="switchTab('doctors')">👨‍⚕️ 醫師管理</button>
 </nav>
 
 <!-- ══════════════════════════════════════════════════════════════════════════ -->
@@ -137,14 +138,6 @@
       </div>
     </section>
 
-    <section class="card doctors-card">
-      <div class="card-title"><span class="icon">👨‍⚕️</span> 醫師管理</div>
-      <div id="doctorsList" class="doctors-list"></div>
-      <div class="add-doctor-row">
-        <input type="text" id="newDoctorName" placeholder="新增醫師名稱（例：王小明醫師）" />
-        <button class="btn-success" onclick="addDoctor()">新增</button>
-      </div>
-    </section>
   </aside>
 
 </div>
@@ -232,6 +225,24 @@
 
 </div>
 </div><!-- /view-search -->
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<!--  TAB: 醫師管理                                                              -->
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<div id="view-doctors" class="tab-view hidden">
+<div class="search-layout">
+
+  <section class="card search-card">
+    <div class="card-title"><span class="icon">👨‍⚕️</span> 醫師管理</div>
+    <div id="doctorsList" class="doctors-list"></div>
+    <div class="add-doctor-row">
+      <input type="text" id="newDoctorName" placeholder="新增醫師名稱（例：王小明醫師）" />
+      <button class="btn-success" onclick="addDoctor()">新增</button>
+    </div>
+  </section>
+
+</div>
+</div><!-- /view-doctors -->
 
 <!-- ── Modal (成功 / 確認) ──────────────────────────────────────────────────── -->
 <div class="modal-backdrop" id="successModal">

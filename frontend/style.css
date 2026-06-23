@@ -354,7 +354,6 @@ textarea { resize: vertical; min-height: 76px; }
 .appointments-card {
   display: flex;
   flex-direction: column;
-  max-height: 480px;
 }
 .appointments-list { overflow-y: auto; flex: 1; }
 .appointments-list::-webkit-scrollbar { width: 4px; }
