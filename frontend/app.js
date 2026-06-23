@@ -894,6 +894,93 @@ function renderAppointmentsByDoctor(events, container) {
     }).join('') + `</div>`;
 }
 
+// ─── Timeline ─────────────────────────────────────────────────────────────────
+async function showTimeline() {
+  const date = document.getElementById('date').value || localDateStr(new Date());
+  let events = [];
+  try {
+    const res = await fetch(`${API}/api/appointments?date=${date}`);
+    events = await res.json();
+  } catch { showToast('無法載入約診資料'); return; }
+  renderTimeline(date, events);
+}
+
+function renderTimeline(date, events) {
+  const HOUR_H   = 80;
+  const MIN_HOUR = 8;
+  const MAX_HOUR = 21;
+  const TOTAL_H  = (MAX_HOUR - MIN_HOUR) * HOUR_H;
+
+  // 依醫師分組（只取有具體時間的）
+  const groups = new Map();
+  doctorsList.forEach(d => groups.set(d.id, { doc: d, col: getDocColor(d), appts: [] }));
+  events.forEach(ev => {
+    if (!ev.start?.dateTime) return;
+    const doc = getDocFromSummary(ev.summary || '', ev);
+    if (!doc) return;
+    groups.get(doc.id)?.appts.push(ev);
+  });
+  const cols = [...groups.values()].filter(g => g.appts.length > 0);
+
+  // 時間標籤 & 格線
+  let timeLabels = '', gridLines = '';
+  for (let h = MIN_HOUR; h <= MAX_HOUR; h++) {
+    const top = (h - MIN_HOUR) * HOUR_H;
+    timeLabels += `<div class="tl-hour-label" style="top:${top}px">${pad(h)}:00</div>`;
+    gridLines  += `<div class="tl-grid-line" style="top:${top}px"></div>`;
+    if (h < MAX_HOUR) gridLines += `<div class="tl-grid-line tl-grid-half" style="top:${top + HOUR_H/2}px"></div>`;
+  }
+
+  // 醫師欄
+  const colsHtml = cols.map(g => {
+    const col    = g.col;
+    const drName = g.doc.name.replace('醫師','').trim();
+    const blocks = g.appts.map(ev => {
+      const s = new Date(ev.start.dateTime);
+      const e = new Date(ev.end?.dateTime || ev.start.dateTime);
+      const sMins = s.getHours() * 60 + s.getMinutes();
+      const eMins = e.getHours() * 60 + e.getMinutes();
+      const top    = Math.max(0, (sMins - MIN_HOUR * 60) / 60 * HOUR_H);
+      const height = Math.max((eMins - sMins) / 60 * HOUR_H, 22);
+      return `
+        <div class="tl-appt-block" style="top:${top}px;height:${height}px;background:${col.light};border-left:4px solid ${col.bg};"
+          onclick="closeTimeline();editAppointment('${ev.id}')">
+          <div class="tl-appt-time" style="color:${col.bg};">${pad(s.getHours())}:${pad(s.getMinutes())}</div>
+          <div class="tl-appt-name">${escHtml(ev.summary||'')}</div>
+        </div>`;
+    }).join('');
+    return `
+      <div class="tl-doctor-col">
+        <div class="tl-doc-header" style="color:${col.bg};border-bottom:2px solid ${col.bg};">
+          <span class="tl-doc-dot" style="background:${col.bg};"></span>${escHtml(drName)}
+        </div>
+        <div class="tl-col-body" style="height:${TOTAL_H}px;">${gridLines}${blocks}</div>
+      </div>`;
+  }).join('');
+
+  const dateStr = new Date(date + 'T12:00:00').toLocaleDateString('zh-TW', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
+  const html = `
+    <div class="tl-overlay" id="timelineOverlay" onclick="if(event.target===this)closeTimeline()">
+      <div class="tl-modal">
+        <div class="tl-modal-header">
+          <h2>⏱ 今日時間軸 — ${dateStr}</h2>
+          <button class="tl-close" onclick="closeTimeline()">✕</button>
+        </div>
+        <div class="tl-modal-body">
+          <div class="tl-grid">
+            <div class="tl-time-col" style="height:${TOTAL_H}px;">${timeLabels}</div>
+            ${cols.length ? colsHtml : '<p class="placeholder-text" style="padding:40px 20px;">此日尚無有時間的約診</p>'}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function closeTimeline() {
+  document.getElementById('timelineOverlay')?.remove();
+}
+
 let lastDeleted       = null; // { event, calendar_id }
 let lastDeletedDoctor = null; // { id, name, data }
 let doctorDeleteTimer = null;
