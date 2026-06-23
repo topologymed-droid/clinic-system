@@ -857,13 +857,13 @@ function renderAppointmentsByDoctor(events, container) {
     groups.get(key).appts.push(ev);
   });
 
-  const rows = [...groups.values()].filter(g => g.appts.length > 0);
+  const sections = [...groups.values()].filter(g => g.appts.length > 0);
 
   container.innerHTML = `<div class="appt-by-doctor">` +
-    rows.map(g => {
+    sections.map(g => {
       const col    = g.col;
       const drName = g.doc ? g.doc.name.replace('醫師','').trim() : '其他';
-      const chips  = g.appts.map(ev => {
+      const rowsHtml = g.appts.map(ev => {
         const start = ev.start?.dateTime
           ? new Date(ev.start.dateTime).toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit', hour12:false })
           : '--:--';
@@ -872,20 +872,23 @@ function renderAppointmentsByDoctor(events, container) {
           : '';
         const sumRaw = (ev.summary || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
         return `
-          <div class="appt-chip-compact" style="border-left:4px solid ${col.bg};background:${col.light};" onclick="editAppointment('${ev.id}')">
-            <div class="appt-chip-time" style="color:${col.bg};">${start}${end ? '–'+end : ''}</div>
-            <div class="appt-chip-name">${escHtml(ev.summary||'')}</div>
-            <button class="appt-chip-cancel" type="button"
-              onclick="event.stopPropagation();cancelAppointment('${ev.id}','${sumRaw}')">✕</button>
+          <div class="appt-row-item" onclick="editAppointment('${ev.id}')">
+            <span class="appt-row-time" style="color:${col.bg};">${start}${end ? '–'+end : ''}</span>
+            <span class="appt-row-name">${escHtml(ev.summary||'')}</span>
+            <div class="appt-row-actions">
+              <button class="appt-row-edit" type="button" onclick="event.stopPropagation();editAppointment('${ev.id}')">修改</button>
+              <button class="appt-row-del"  type="button" onclick="event.stopPropagation();cancelAppointment('${ev.id}','${sumRaw}')">取消</button>
+            </div>
           </div>`;
       }).join('');
       return `
-        <div class="appt-dr-row">
-          <div class="appt-dr-row-label" style="color:${col.bg};">
+        <div class="appt-dr-section">
+          <div class="appt-dr-header" style="background:${col.light};color:${col.bg};">
             <span class="appt-dr-dot" style="background:${col.bg};"></span>
             ${escHtml(drName)}
+            <span class="appt-dr-count">${g.appts.length} 件</span>
           </div>
-          <div class="appt-dr-row-chips">${chips}</div>
+          <div class="appt-dr-rows">${rowsHtml}</div>
         </div>`;
     }).join('') + `</div>`;
 }
