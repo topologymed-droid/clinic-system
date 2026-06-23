@@ -5,13 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>雅言牙醫診所 — 約診系統</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 </head>
 <body>
 
 <!-- ── Header ──────────────────────────────────────────────────────────────── -->
 <header class="header">
   <div class="header-left">
-    <span class="header-icon">🦷</span>
+    <span class="header-icon"><i class="fa-solid fa-tooth"></i></span>
     <div>
       <h1>雅言牙醫診所</h1>
       <div class="header-sub">診所約診管理系統</div>
@@ -22,10 +23,10 @@
 
 <!-- ── Tab Bar ─────────────────────────────────────────────────────────────── -->
 <nav class="tab-bar">
-  <button class="tab active" id="tab-form"     onclick="switchTab('form')">📋 新增約診</button>
-  <button class="tab"        id="tab-calendar" onclick="switchTab('calendar')">📅 月曆檢視</button>
-  <button class="tab"        id="tab-search"   onclick="switchTab('search')">🔍 查詢患者</button>
-  <button class="tab"        id="tab-doctors"  onclick="switchTab('doctors')">👨‍⚕️ 醫師管理</button>
+  <button class="tab active" id="tab-form"     onclick="switchTab('form')"><i class="fa-solid fa-clipboard-list"></i> 新增約診</button>
+  <button class="tab"        id="tab-calendar" onclick="switchTab('calendar')"><i class="fa-solid fa-calendar-days"></i> 月曆檢視</button>
+  <button class="tab"        id="tab-search"   onclick="switchTab('search')"><i class="fa-solid fa-magnifying-glass"></i> 查詢患者</button>
+  <button class="tab"        id="tab-doctors"  onclick="switchTab('doctors')"><i class="fa-solid fa-user-doctor"></i> 醫師管理</button>
 </nav>
 
 <!-- ══════════════════════════════════════════════════════════════════════════ -->
@@ -36,7 +37,7 @@
 
   <!-- ─ Form Panel ─────────────────────────────────────────────────────────── -->
   <section class="card form-panel">
-    <div class="card-title"><span class="icon">📋</span> 新增約診</div>
+    <div class="card-title"><span class="icon"><i class="fa-solid fa-clipboard-list"></i></span> 新增約診</div>
     <form id="appointmentForm" novalidate>
 
       <div class="form-row-2">
@@ -53,7 +54,7 @@
             <option value="">請選擇醫師</option>
           </select>
           <div id="doctorNote" class="doctor-note-badge" style="display:none;">
-            <span class="note-icon">📋</span><span id="doctorNoteText"></span>
+            <span class="note-icon"><i class="fa-solid fa-note-sticky"></i></span><span id="doctorNoteText"></span>
           </div>
         </div>
       </div>
@@ -117,7 +118,7 @@
       </div>
 
       <button type="submit" class="btn-primary btn-submit" id="submitBtn">
-        📅 確認約診並加入 Google 日曆
+        <i class="fa-solid fa-calendar-plus"></i> 確認約診並加入 Google 日曆
       </button>
     </form>
   </section>
@@ -126,11 +127,11 @@
   <aside class="side-panel">
     <section class="card appointments-card">
       <div class="card-header-row">
-        <div class="card-title"><span class="icon">🗓</span> <span id="apptCardTitle">今日約診</span></div>
+        <div class="card-title"><span class="icon"><i class="fa-solid fa-calendar-days"></i></span> <span id="apptCardTitle">今日約診</span></div>
         <div style="display:flex;gap:6px;align-items:center;">
-          <button class="btn-icon" onclick="loadAppointments()" title="重新整理">↻</button>
-          <button class="btn-print" onclick="printDayList()" title="列印患者清單">🖨</button>
-          <button class="btn-add-appt" onclick="focusForm()">＋ 新增</button>
+          <button class="btn-icon" onclick="loadAppointments()" title="重新整理"><i class="fa-solid fa-rotate-right"></i></button>
+          <button class="btn-print" onclick="printDayList()" title="列印患者清單"><i class="fa-solid fa-print"></i></button>
+          <button class="btn-add-appt" onclick="focusForm()"><i class="fa-solid fa-plus"></i> 新增</button>
         </div>
       </div>
       <div id="appointmentsList" class="appointments-list">
@@ -189,10 +190,10 @@
   <!-- 選取日期的詳細約診 -->
   <div class="cal-detail card">
     <div class="card-header-row">
-      <div class="card-title"><span class="icon">📋</span> <span id="calDetailTitle">點選日期查看約診</span></div>
+      <div class="card-title"><span class="icon"><i class="fa-solid fa-clipboard-list"></i></span> <span id="calDetailTitle">點選日期查看約診</span></div>
       <div style="display:flex;gap:6px;align-items:center;">
-        <button class="btn-print" id="calPrintBtn" style="display:none;" onclick="printCalDay()" title="列印患者清單">🖨</button>
-        <button class="btn-add-appt" id="calAddBtn" style="display:none;" onclick="goAddForDate()">＋ 新增</button>
+        <button class="btn-print" id="calPrintBtn" style="display:none;" onclick="printCalDay()" title="列印患者清單"><i class="fa-solid fa-print"></i></button>
+        <button class="btn-add-appt" id="calAddBtn" style="display:none;" onclick="goAddForDate()"><i class="fa-solid fa-plus"></i> 新增</button>
       </div>
     </div>
     <div id="calDetailList" class="appointments-list">
@@ -210,7 +211,7 @@
 <div class="search-layout">
 
   <section class="card search-card">
-    <div class="card-title"><span class="icon">🔍</span> 查詢患者</div>
+    <div class="card-title"><span class="icon"><i class="fa-solid fa-magnifying-glass"></i></span> 查詢患者</div>
 
     <div class="search-input-row">
       <input type="text" id="searchInput" placeholder="輸入患者姓名（可輸入部分）…" autocomplete="off" />
@@ -233,7 +234,7 @@
 <div class="search-layout">
 
   <section class="card search-card">
-    <div class="card-title"><span class="icon">👨‍⚕️</span> 醫師管理</div>
+    <div class="card-title"><span class="icon"><i class="fa-solid fa-user-doctor"></i></span> 醫師管理</div>
     <div id="doctorsList" class="doctors-list"></div>
     <div class="add-doctor-row">
       <input type="text" id="newDoctorName" placeholder="新增醫師名稱（例：王小明醫師）" />
@@ -255,7 +256,7 @@
 <!-- ── Undo Toast ───────────────────────────────────────────────────────────── -->
 <div class="undo-toast" id="undoToast">
   <div class="undo-msg">
-    <span>🗑 約診已取消</span>
+    <span id="undoMsgText"><i class="fa-solid fa-trash-can"></i> 約診已取消</span>
   </div>
   <div class="undo-actions">
     <div class="undo-bar"><div class="undo-bar-fill" id="undoBarFill"></div></div>

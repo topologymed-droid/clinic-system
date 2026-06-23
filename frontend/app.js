@@ -287,7 +287,7 @@ function renderDoctorsPanel() {
         <button class="btn-danger-sm" onclick="deleteDoctor('${d.id}','${escHtml(d.name)}')">移除</button>
       </div>
       <div class="doctor-item-note">
-        <span>📋</span>
+        <span><i class="fa-solid fa-note-sticky"></i></span>
         <input type="text" id="note-${d.id}" value="${escHtml(d.note || '')}" placeholder="新增備注（如：週五午晚診）" />
         <button class="btn-note-save" onclick="saveNote('${d.id}')">儲存</button>
       </div>`;
@@ -370,7 +370,7 @@ async function deleteDoctor(id, name) {
 
   // 顯示倒數 toast
   undoType = 'doctor';
-  showUndoToast(`🗑 已移除「${name}」`);
+  showUndoToast(`<i class="fa-solid fa-trash-can"></i> 已移除「${name}」`);
 
   // 倒數結束 → 真正刪除
   doctorDeleteTimer = setTimeout(async () => {
@@ -449,7 +449,7 @@ function renderComplaintShortcuts(textareaId, containerId) {
     const editBtn = document.createElement('button');
     editBtn.type = 'button';
     editBtn.className = 'complaint-chip-edit';
-    editBtn.textContent = '✏️';
+    editBtn.innerHTML = '<i class="fa-solid fa-pen"></i>';
     editBtn.title = '編輯';
     editBtn.onclick = (e) => { e.stopPropagation(); startEditComplaint(chip, p, textareaId, containerId); };
 
@@ -828,7 +828,7 @@ function renderAppointments(events, container) {
           <div class="appt-meta">${escHtml(desc)}</div>
         </div>
         <div class="appt-actions">
-          <button class="btn-edit-sm" onclick="editAppointment('${ev.id}')">✏️ 修改</button>
+          <button class="btn-edit-sm" onclick="editAppointment('${ev.id}')"><i class="fa-solid fa-pen"></i> 修改</button>
           <button class="btn-danger-sm" onclick="cancelAppointment('${ev.id}','${escHtml(summary)}')">取消</button>
         </div>
       </div>`;
@@ -1000,7 +1000,7 @@ function cancelAppointment(eventId, summary) {
         lastDeleted = { event: result.event, calendar_id: result.calendar_id };
         undoType = 'appointment';
         await reloadAllViews();
-        showUndoToast(`🗑 約診已取消`);
+        showUndoToast(`<i class="fa-solid fa-trash-can"></i> 約診已取消`);
       } catch (e) { showToast('取消失敗：' + e.message, true); }
     }
   );
@@ -1129,7 +1129,7 @@ function editAppointment(eventId) {
   const all = timeSlots();
   box.innerHTML = `
     <div class="edit-box">
-      <h4>✏️ 修改約診</h4>
+      <h4><i class="fa-solid fa-pen"></i> 修改約診</h4>
       <p class="edit-summary">${escHtml(ev.summary || '')}</p>
       <div class="edit-fields">
         <div class="edit-row">
@@ -1278,7 +1278,7 @@ function showUndoToast(msg) {
   const toast = document.getElementById('undoToast');
   const fill  = document.getElementById('undoBarFill');
   const msgEl = document.querySelector('#undoToast .undo-msg span');
-  if (msgEl) msgEl.textContent = msg;
+  if (msgEl) msgEl.innerHTML = msg;
   toast.classList.add('show');
   fill.style.transition = 'none';
   fill.style.width = '100%';
@@ -1342,7 +1342,7 @@ async function handleSubmit(e) {
     await loadAppointments();
     fetchPatientNames(); // 更新患者自動完成名單
   } catch { showToast('無法連接伺服器', true); }
-  finally { btn.disabled = false; btn.textContent = '📅 確認約診並加入 Google 日曆'; }
+  finally { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-calendar-plus"></i> 確認約診並加入 Google 日曆'; }
 }
 
 function resetForm() {
@@ -1463,7 +1463,7 @@ async function doSearch() {
               <div class="appt-meta">${escHtml(desc)}</div>
             </div>
             <div class="appt-actions">
-              <button class="btn-edit-sm" onclick="editAppointment('${ev.id}')">✏️ 修改</button>
+              <button class="btn-edit-sm" onclick="editAppointment('${ev.id}')"><i class="fa-solid fa-pen"></i> 修改</button>
               <button class="btn-danger-sm" onclick="cancelAppointmentFromSearch('${ev.id}','${escHtml(summary)}')">取消</button>
             </div>
           </div>
@@ -1485,7 +1485,7 @@ function cancelAppointmentFromSearch(eventId, summary) {
       if (!res.ok) throw new Error(result.detail);
       lastDeleted = { event: result.event, calendar_id: result.calendar_id };
       undoType = 'appointment';
-      showUndoToast(`🗑 約診已取消`);
+      showUndoToast(`<i class="fa-solid fa-trash-can"></i> 約診已取消`);
       doSearch(); // 重新搜尋更新結果
     } catch(e) { showToast('取消失敗：' + e.message, true); }
   });
@@ -1974,12 +1974,12 @@ function buildPrintHtml(date, events, selectedDoctors) {
   @media print{.print-btn{display:none}tr{page-break-inside:avoid}}
 </style></head><body>
 <div class="hd">
-  <div class="clinic">🦷 雅言牙醫診所</div>
+  <div class="clinic">雅言牙醫診所</div>
   <div class="date">${dateLabel}</div>
   <div class="sub">${escHtml(docLabel)}</div>
   <div class="count">共 ${sorted.length} 位患者</div>
 </div>
-<button class="print-btn" onclick="window.print()">🖨 列印</button>
+<button class="print-btn" onclick="window.print()">列印</button>
 <table>
   <thead><tr>
     <th style="width:110px">時間</th>
@@ -2016,7 +2016,7 @@ function showPrintDialog(date, events) {
   const box = document.querySelector('.modal-box');
   box.innerHTML = `
     <div class="edit-box">
-      <h4>🖨 選擇列印範圍</h4>
+      <h4><i class="fa-solid fa-print"></i> 選擇列印範圍</h4>
       <p style="font-size:12px;color:var(--text-sub);margin:6px 0 14px;">可多選，勾選的醫師才會印出</p>
       <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
         <button class="btn-note-save" onclick="toggleAllPrintDocs(true)">全選</button>
@@ -2026,7 +2026,7 @@ function showPrintDialog(date, events) {
       <div class="confirm-actions" style="margin-top:20px;">
         <button class="btn-cancel-no" onclick="closeModal()">取消</button>
         <button class="btn-primary" style="padding:9px 28px;font-size:13px;"
-          onclick="doPrint('${date}')">🖨 列印</button>
+          onclick="doPrint('${date}')"><i class="fa-solid fa-print"></i> 列印</button>
       </div>
     </div>`;
 
