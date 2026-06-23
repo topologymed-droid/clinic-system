@@ -851,9 +851,10 @@ function renderAppointmentsByDoctor(events, container) {
   doctorsList.forEach(d => groups.set(d.id, { doc: d, col: getDocColor(d), appts: [] }));
 
   events.forEach(ev => {
-    const doc = getDocFromSummary(ev.summary || '', ev);
-    const key = doc ? doc.id : '__other__';
-    if (!groups.has(key)) groups.set(key, { doc, col: getDocColor(doc), appts: [] });
+    const hasTime = !!ev.start?.dateTime;
+    const doc = hasTime ? getDocFromSummary(ev.summary || '', ev) : null;
+    const key = (doc && hasTime) ? doc.id : '__other__';
+    if (!groups.has(key)) groups.set(key, { doc: hasTime ? doc : null, col: getDocColor(hasTime ? doc : null), appts: [] });
     groups.get(key).appts.push(ev);
   });
 
