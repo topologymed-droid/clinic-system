@@ -68,7 +68,15 @@ body {
   margin: 22px auto;
   padding: 0 22px 40px;
 }
-.side-panel { display: flex; flex-direction: column; gap: 20px; }
+.side-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: sticky;
+  top: 80px;
+  align-self: start;
+  max-height: calc(100vh - 100px);
+}
 
 /* ─── Card ─────────────────────────────────────────────────────────────────── */
 .card {
@@ -354,6 +362,7 @@ textarea { resize: vertical; min-height: 76px; }
 .appointments-card {
   display: flex;
   flex-direction: column;
+  max-height: calc(100vh - 140px);
 }
 .appointments-list { overflow-y: auto; flex: 1; }
 .appointments-list::-webkit-scrollbar { width: 4px; }
