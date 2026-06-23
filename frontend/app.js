@@ -905,8 +905,32 @@ async function showTimeline() {
   renderTimeline(date, events);
 }
 
+// 偵測時間重疊，分配到不同 lane（子欄）
+function assignLanes(appts) {
+  const sorted = [...appts].sort((a, b) =>
+    new Date(a.start.dateTime) - new Date(b.start.dateTime));
+  const laneEnds = [];
+  const result = sorted.map(appt => {
+    const start = new Date(appt.start.dateTime).getTime();
+    const end   = new Date(appt.end?.dateTime || appt.start.dateTime).getTime();
+    let lane = laneEnds.findIndex(t => start >= t);
+    if (lane === -1) { lane = laneEnds.length; laneEnds.push(0); }
+    laneEnds[lane] = end;
+    return { appt, lane };
+  });
+  // 計算每個 block 在其時段內同時有幾個 lane
+  result.forEach(item => {
+    const s = new Date(item.appt.start.dateTime).getTime();
+    const e = new Date(item.appt.end?.dateTime || item.appt.start.dateTime).getTime();
+    item.totalLanes = Math.max(...result
+      .filter(o => new Date(o.appt.start.dateTime) < e && new Date(o.appt.end?.dateTime || o.appt.start.dateTime) > s)
+      .map(o => o.lane)) + 1;
+  });
+  return result;
+}
+
 function renderTimeline(date, events) {
-  const HOUR_H   = 80;
+  const HOUR_H   = 110; // px per hour — 15 min = 27.5px, 30 min = 55px
   const MIN_HOUR = 8;
   const MAX_HOUR = 21;
   const TOTAL_H  = (MAX_HOUR - MIN_HOUR) * HOUR_H;
@@ -931,21 +955,27 @@ function renderTimeline(date, events) {
     if (h < MAX_HOUR) gridLines += `<div class="tl-grid-line tl-grid-half" style="top:${top + HOUR_H/2}px"></div>`;
   }
 
-  // 醫師欄
+  // 醫師欄（含重疊分 lane 處理）
   const colsHtml = cols.map(g => {
     const col    = g.col;
     const drName = g.doc.name.replace('醫師','').trim();
-    const blocks = g.appts.map(ev => {
+    const laned  = assignLanes(g.appts);
+    const MIN_H  = 28; // 最小高度 px
+    const blocks = laned.map(({ appt: ev, lane, totalLanes }) => {
       const s = new Date(ev.start.dateTime);
       const e = new Date(ev.end?.dateTime || ev.start.dateTime);
       const sMins = s.getHours() * 60 + s.getMinutes();
       const eMins = e.getHours() * 60 + e.getMinutes();
       const top    = Math.max(0, (sMins - MIN_HOUR * 60) / 60 * HOUR_H);
-      const height = Math.max((eMins - sMins) / 60 * HOUR_H, 22);
+      const height = Math.max((eMins - sMins) / 60 * HOUR_H, MIN_H);
+      const leftPct  = lane / totalLanes * 100;
+      const widthPct = 100 / totalLanes;
+      const timeStr = `${pad(s.getHours())}:${pad(s.getMinutes())}–${pad(e.getHours())}:${pad(e.getMinutes())}`;
       return `
-        <div class="tl-appt-block" style="top:${top}px;height:${height}px;background:${col.light};border-left:4px solid ${col.bg};"
+        <div class="tl-appt-block"
+          style="top:${top}px;height:${height}px;left:calc(${leftPct}% + 3px);width:calc(${widthPct}% - 6px);background:${col.light};border-left:3px solid ${col.bg};"
           onclick="closeTimeline();editAppointment('${ev.id}')">
-          <div class="tl-appt-time" style="color:${col.bg};">${pad(s.getHours())}:${pad(s.getMinutes())}</div>
+          <div class="tl-appt-time" style="color:${col.bg};">${timeStr}</div>
           <div class="tl-appt-name">${escHtml(ev.summary||'')}</div>
         </div>`;
     }).join('');
