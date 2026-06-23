@@ -786,7 +786,7 @@ async function loadAppointments() {
   try {
     const res    = await fetch(`${API}/api/appointments?date=${date}`);
     const events = await res.json();
-    renderAppointments(events, list);
+    renderAppointmentsByDoctor(events, list);
   } catch {
     list.innerHTML = '<p class="placeholder-text">（請確認後端已啟動並完成 Google 授權）</p>';
   }
@@ -833,6 +833,61 @@ function renderAppointments(events, container) {
         </div>
       </div>`;
   }).join('');
+}
+
+function renderAppointmentsByDoctor(events, container) {
+  if (!events || !events.length) {
+    container.innerHTML = `
+      <div style="text-align:center;padding:28px 0;">
+        <p class="placeholder-text" style="margin-bottom:14px;">此日尚無約診記錄</p>
+        <button class="btn-add-appt" onclick="focusForm()">＋ 新增約診</button>
+      </div>`;
+    return;
+  }
+  events.forEach(ev => { if (ev.id) eventsCache[ev.id] = ev; });
+
+  // 依 doctorsList 順序建立 Map，有約診才加入
+  const groups = new Map();
+  doctorsList.forEach(d => groups.set(d.id, { doc: d, col: getDocColor(d), appts: [] }));
+
+  events.forEach(ev => {
+    const doc = getDocFromSummary(ev.summary || '', ev);
+    const key = doc ? doc.id : '__other__';
+    if (!groups.has(key)) groups.set(key, { doc, col: getDocColor(doc), appts: [] });
+    groups.get(key).appts.push(ev);
+  });
+
+  const rows = [...groups.values()].filter(g => g.appts.length > 0);
+
+  container.innerHTML = `<div class="appt-by-doctor">` +
+    rows.map(g => {
+      const col    = g.col;
+      const drName = g.doc ? g.doc.name.replace('醫師','').trim() : '其他';
+      const chips  = g.appts.map(ev => {
+        const start = ev.start?.dateTime
+          ? new Date(ev.start.dateTime).toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit', hour12:false })
+          : '--:--';
+        const end = ev.end?.dateTime
+          ? new Date(ev.end.dateTime).toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit', hour12:false })
+          : '';
+        const sumRaw = (ev.summary || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        return `
+          <div class="appt-chip-compact" style="border-left:4px solid ${col.bg};background:${col.light};" onclick="editAppointment('${ev.id}')">
+            <div class="appt-chip-time" style="color:${col.bg};">${start}${end ? '–'+end : ''}</div>
+            <div class="appt-chip-name">${escHtml(ev.summary||'')}</div>
+            <button class="appt-chip-cancel" type="button"
+              onclick="event.stopPropagation();cancelAppointment('${ev.id}','${sumRaw}')">✕</button>
+          </div>`;
+      }).join('');
+      return `
+        <div class="appt-dr-row">
+          <div class="appt-dr-row-label" style="color:${col.bg};">
+            <span class="appt-dr-dot" style="background:${col.bg};"></span>
+            ${escHtml(drName)}
+          </div>
+          <div class="appt-dr-row-chips">${chips}</div>
+        </div>`;
+    }).join('') + `</div>`;
 }
 
 let lastDeleted       = null; // { event, calendar_id }

@@ -62,9 +62,9 @@ body {
 /* ─── Layout ───────────────────────────────────────────────────────────────── */
 .container {
   display: grid;
-  grid-template-columns: 1fr 370px;
+  grid-template-columns: 420px 1fr;
   gap: 22px;
-  max-width: 1280px;
+  max-width: 1400px;
   margin: 22px auto;
   padding: 0 22px 40px;
 }
@@ -76,6 +76,7 @@ body {
   top: 80px;
   align-self: start;
   max-height: calc(100vh - 100px);
+  overflow-y: auto;
 }
 
 /* ─── Card ─────────────────────────────────────────────────────────────────── */
@@ -362,9 +363,85 @@ textarea { resize: vertical; min-height: 76px; }
 .appointments-card {
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 140px);
 }
-.appointments-list { overflow-y: auto; flex: 1; }
+.appointments-list { flex: 1; }
+
+/* ─── By-Doctor Row Layout ─────────────────────────────────────────────────── */
+.appt-by-doctor { display: flex; flex-direction: column; gap: 4px; }
+
+.appt-dr-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--warm-border);
+}
+.appt-dr-row:last-child { border-bottom: none; }
+
+.appt-dr-row-label {
+  min-width: 70px;
+  max-width: 70px;
+  flex-shrink: 0;
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 5px;
+}
+.appt-dr-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.appt-dr-row-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1;
+}
+
+.appt-chip-compact {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 24px 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  min-width: 110px;
+  max-width: 170px;
+  transition: filter .1s;
+}
+.appt-chip-compact:hover { filter: brightness(.94); }
+
+.appt-chip-time {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.appt-chip-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 140px;
+}
+.appt-chip-cancel {
+  position: absolute;
+  top: 4px; right: 4px;
+  background: none; border: none;
+  color: var(--text-hint);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0 3px;
+  line-height: 1;
+  border-radius: 3px;
+}
+.appt-chip-cancel:hover { color: var(--red); background: rgba(192,84,74,.1); }
 .appointments-list::-webkit-scrollbar { width: 4px; }
 .appointments-list::-webkit-scrollbar-thumb { background: var(--warm-tan); border-radius: 4px; }
 
