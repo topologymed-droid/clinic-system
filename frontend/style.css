@@ -966,8 +966,20 @@ nav.tab-bar {
 .cal-day.today .cal-day-num { background: var(--teal); color: white; border-radius: 50%; }
 .cal-day.other-month { background: transparent; border-color: transparent; cursor: default; opacity: .45; }
 .cal-day.other-month:hover { background: transparent; border-color: transparent; }
-.cal-day.sunday  .cal-day-num { color: #c05a5a; }
+.cal-day.sunday   .cal-day-num { color: #c05a5a; }
 .cal-day.saturday .cal-day-num { color: #5a72c0; }
+.cal-day.holiday  .cal-day-num { color: #c04040; }
+
+.cal-holiday-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #c04040;
+  letter-spacing: .2px;
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .cal-day-num {
   font-size: 13px;

@@ -2,6 +2,38 @@
 
 const API = ''; // 自動使用當前網域，Mac localhost 或 ngrok 都能運作
 
+// ─── 台灣國定假日 ─────────────────────────────────────────────────────────────
+const TW_HOLIDAYS = {
+  // 固定日期
+  '01-01': '元旦',
+  '02-28': '和平紀念日',
+  '04-04': '兒童節',
+  '05-01': '勞動節',
+  '10-10': '國慶日',
+  // 2025 農曆假日
+  '2025-01-27': '春節',
+  '2025-01-28': '春節',
+  '2025-01-29': '春節',
+  '2025-01-30': '春節',
+  '2025-01-31': '春節',
+  '2025-04-03': '清明節',
+  '2025-05-31': '端午節',
+  '2025-10-06': '中秋節',
+  // 2026 農曆假日
+  '2026-02-17': '春節',
+  '2026-02-18': '春節',
+  '2026-02-19': '春節',
+  '2026-02-20': '春節',
+  '2026-02-21': '春節',
+  '2026-06-20': '端午節',
+  '2026-09-25': '中秋節',
+};
+function getTwHoliday(dateStr) {
+  if (TW_HOLIDAYS[dateStr]) return TW_HOLIDAYS[dateStr];
+  const mmdd = dateStr.slice(5);
+  return TW_HOLIDAYS[mmdd] || null;
+}
+
 let doctorsList       = [];
 let complaintPresets  = [];
 let bookersList       = [];
@@ -1684,6 +1716,9 @@ function buildCalGrid(firstDay, lastDay, eventsMap) {
     if (dow === 0) cell.classList.add('sunday');
     if (dow === 6) cell.classList.add('saturday');
 
+    const holiday = getTwHoliday(dateStr);
+    if (holiday) cell.classList.add('holiday');
+
     const numEl = document.createElement('div');
     numEl.className = 'cal-day-num';
     numEl.textContent = d;
@@ -1719,6 +1754,12 @@ function buildCalGrid(firstDay, lastDay, eventsMap) {
     });
 
     cell.appendChild(numEl);
+    if (holiday) {
+      const hlEl = document.createElement('div');
+      hlEl.className = 'cal-holiday-label';
+      hlEl.textContent = holiday;
+      cell.appendChild(hlEl);
+    }
     cell.appendChild(chipsEl);
     cell.appendChild(freeEl);
     cell.addEventListener('click', () => selectCalDay(dateStr, evs));
