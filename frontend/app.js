@@ -2,51 +2,61 @@
 
 const API = ''; // 自動使用當前網域，Mac localhost 或 ngrok 都能運作
 
-// ─── 台灣國定假日（依行政院人事行政總處公告）────────────────────────────────
-const TW_HOLIDAYS = {
-  // ── 每年固定日期 ──
-  '01-01': '元旦',
-  '02-28': '和平紀念日',
-  '04-04': '兒童節',
-  '05-01': '勞動節',
-  '09-28': '孔子誕辰紀念日',
-  '10-10': '國慶日',
-  '10-25': '台灣光復節',
-  '12-25': '行憲紀念日',
+// ─── 台灣國定假日 ────────────────────────────────────────────────────────────
+// 每年自動從 CDN 載入；以下為離線備援資料（已確認 2025/2026）
 
-  // ── 2025（114年）──
-  '2025-01-27': '農曆除夕（補假）',
-  '2025-01-28': '農曆除夕',
-  '2025-01-29': '春節',
-  '2025-01-30': '春節',
-  '2025-01-31': '春節（補假）',
-  '2025-04-03': '清明節（補假）',
-  '2025-04-05': '清明節',
-  '2025-05-30': '端午節（補假）',
-  '2025-05-31': '端午節',
-  '2025-09-29': '孔子誕辰（補假）',
-  '2025-10-06': '中秋節',
-  '2025-10-24': '台灣光復節（補假）',
-
-  // ── 2026（115年）──
-  '2026-02-15': '農曆除夕（補假）',
-  '2026-02-16': '農曆除夕',
-  '2026-02-17': '春節',
-  '2026-02-18': '春節',
-  '2026-02-19': '春節',
-  '2026-02-27': '和平紀念日（補假）',
-  '2026-04-03': '兒童節（補假）',
-  '2026-04-05': '清明節',
-  '2026-04-06': '清明節（補假）',
-  '2026-06-19': '端午節',
-  '2026-09-25': '中秋節',
-  '2026-10-09': '國慶日（補假）',
-  '2026-10-26': '台灣光復節（補假）',
+const TW_HOLIDAYS_FIXED = {
+  '01-01': '元旦',       '02-28': '和平紀念日', '04-04': '兒童節',
+  '05-01': '勞動節',     '09-28': '孔子誕辰紀念日', '10-10': '國慶日',
+  '10-25': '臺灣光復節', '12-25': '行憲紀念日',
 };
+
+const TW_HOLIDAYS_FALLBACK = {
+  // 2025
+  '2025-01-27':'小年夜',      '2025-01-28':'農曆除夕', '2025-01-29':'春節',
+  '2025-01-30':'春節',        '2025-01-31':'春節',     '2025-04-03':'補假',
+  '2025-04-04':'兒童節及清明', '2025-05-30':'補假',    '2025-05-31':'端午節',
+  '2025-09-29':'補假',        '2025-10-06':'中秋節',   '2025-10-24':'補假',
+  // 2026
+  '2026-02-15':'小年夜',  '2026-02-16':'農曆除夕', '2026-02-17':'春節',
+  '2026-02-18':'春節',    '2026-02-19':'春節',     '2026-02-20':'補假',
+  '2026-02-27':'補假',    '2026-04-03':'補假',     '2026-04-05':'清明節',
+  '2026-04-06':'補假',    '2026-06-19':'端午節',   '2026-09-25':'中秋節',
+  '2026-10-09':'補假',    '2026-10-26':'補假',
+};
+
+let TW_HOLIDAYS_DYNAMIC = {};  // 從 CDN 載入後填入
+
 function getTwHoliday(dateStr) {
-  if (TW_HOLIDAYS[dateStr]) return TW_HOLIDAYS[dateStr];
-  const mmdd = dateStr.slice(5);
-  return TW_HOLIDAYS[mmdd] || null;
+  return TW_HOLIDAYS_DYNAMIC[dateStr]
+    || TW_HOLIDAYS_FALLBACK[dateStr]
+    || TW_HOLIDAYS_FIXED[dateStr.slice(5)]
+    || null;
+}
+
+async function loadHolidaysFromCDN() {
+  const thisYear = new Date().getFullYear();
+  const years = [thisYear - 1, thisYear, thisYear + 1, thisYear + 2];
+  for (const yr of years) {
+    const key = `tw_hol_${yr}`;
+    let data = null;
+    try { data = JSON.parse(localStorage.getItem(key)); } catch {}
+    if (!data) {
+      try {
+        const res = await fetch(
+          `https://cdn.jsdelivr.net/gh/ruyut/TaiwanCalendar/data/${yr}.json`
+        );
+        if (res.ok) { data = await res.json(); localStorage.setItem(key, JSON.stringify(data)); }
+      } catch {}
+    }
+    if (Array.isArray(data)) {
+      data.forEach(({ date, isHoliday, description }) => {
+        if (!isHoliday || !description || !description.trim()) return;
+        const ds = `${date.slice(0,4)}-${date.slice(4,6)}-${date.slice(6,8)}`;
+        TW_HOLIDAYS_DYNAMIC[ds] = description;
+      });
+    }
+  }
 }
 
 let doctorsList       = [];
@@ -66,6 +76,7 @@ let calAnchorMonth  = new Date().getMonth();
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  loadHolidaysFromCDN();   // 非同步，不阻擋頁面載入
   initDate();
   buildTimeSelects();
   fetchDoctors();
