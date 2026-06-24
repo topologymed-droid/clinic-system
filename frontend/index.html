@@ -6,6 +6,9 @@
   <title>雅言牙醫診所 — 約診系統</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/l10n/zh-tw.js"></script>
 </head>
 <body>
 
@@ -44,7 +47,7 @@
         <div class="form-group">
           <label class="field-label" for="date">日期</label>
           <div class="date-input-row">
-            <input type="date" id="date" required />
+            <input type="text" id="date" required readonly placeholder="選擇日期" />
             <button type="button" class="btn-today" onclick="goToday()">今日</button>
           </div>
         </div>

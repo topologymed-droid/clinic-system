@@ -981,6 +981,31 @@ nav.tab-bar {
   text-overflow: ellipsis;
 }
 
+/* ─── Flatpickr 假日樣式 ───────────────────────────────────────────────────── */
+.flatpickr-day.fp-holiday {
+  color: #c04040 !important;
+  font-weight: 700;
+  position: relative;
+}
+.fp-holiday-dot {
+  display: block;
+  width: 4px; height: 4px;
+  background: #c04040;
+  border-radius: 50%;
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.flatpickr-day.fp-holiday.selected,
+.flatpickr-day.fp-holiday.today {
+  color: #fff !important;
+}
+.flatpickr-day.fp-holiday.selected .fp-holiday-dot,
+.flatpickr-day.fp-holiday.today .fp-holiday-dot {
+  background: rgba(255,255,255,.7);
+}
+
 .cal-day-num {
   font-size: 13px;
   font-weight: 700;

@@ -112,13 +112,41 @@ function switchTab(name) {
 }
 
 // ─── Date ─────────────────────────────────────────────────────────────────────
+let fpDate = null;
+
 function initDate() {
-  const input = document.getElementById('date');
-  input.value = localDateStr(new Date());
-  input.addEventListener('change', () => { updateApptCardTitle(); loadAppointments(); });
+  const todayStr = localDateStr(new Date());
+
+  fpDate = flatpickr('#date', {
+    locale: 'zh_tw',
+    dateFormat: 'Y-m-d',
+    defaultDate: todayStr,
+    allowInput: false,
+    onDayCreate(_dObj, _dStr, _fp, dayElem) {
+      const d = dayElem.dateObj;
+      const ds = localDateStr(d);
+      const hl = getTwHoliday(ds);
+      if (hl) {
+        dayElem.classList.add('fp-holiday');
+        dayElem.title = hl;
+        const dot = document.createElement('span');
+        dot.className = 'fp-holiday-dot';
+        dayElem.appendChild(dot);
+      }
+    },
+    onChange(_selectedDates, _dateStr) {
+      updateApptCardTitle();
+      loadAppointments();
+    },
+  });
 
   document.getElementById('todayDisplay').textContent =
     new Date().toLocaleDateString('zh-TW', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
+}
+
+function setDateValue(dateStr) {
+  if (fpDate) fpDate.setDate(dateStr, true);
+  else document.getElementById('date').value = dateStr;
 }
 
 function localDateStr(d) {
@@ -127,8 +155,7 @@ function localDateStr(d) {
 function pad(n) { return String(n).padStart(2, '0'); }
 
 function goToday() {
-  const input = document.getElementById('date');
-  input.value = localDateStr(new Date());
+  setDateValue(localDateStr(new Date()));
   updateApptCardTitle();
   loadAppointments();
 }
@@ -1418,7 +1445,7 @@ function goAddForDate() {
   switchTab('form');
   if (calSelectedDate) {
     setTimeout(() => {
-      document.getElementById('date').value = calSelectedDate;
+      setDateValue(calSelectedDate);
       updateApptCardTitle();
       loadAppointments();
       document.querySelector('.form-panel').scrollIntoView({ behavior:'smooth' });
