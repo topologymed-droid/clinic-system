@@ -196,14 +196,16 @@ function updateApptCardTitle() {
 }
 
 // ─── Time Inputs ──────────────────────────────────────────────────────────────
-// 顯示 09:00 – 22:00，每 15 分鐘一格
-function timeSlots(fromH = 9, toH = 22) {
+// 顯示 08:30 – 22:00，每 15 分鐘一格
+function timeSlots(fromH = 8, fromM = 30, toH = 22) {
   const slots = [];
-  for (let h = fromH; h <= toH; h++)
-    for (let m = 0; m < 60; m += 15) {
+  for (let h = fromH; h <= toH; h++) {
+    const startM = (h === fromH) ? fromM : 0;
+    for (let m = startM; m < 60; m += 15) {
       if (h === toH && m > 0) break;
       slots.push(`${pad(h)}:${pad(m)}`);
     }
+  }
   return slots;
 }
 
