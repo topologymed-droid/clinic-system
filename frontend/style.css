@@ -1686,3 +1686,158 @@ nav.tab-bar {
   .toast { bottom: 16px; right: 16px; left: 16px; max-width: none; font-size: 13px; }
 }
 
+
+/* ─── 患者聯絡 Tab ─────────────────────────────────────────────────────────── */
+.contact-layout {
+  max-width: 860px;
+  margin: 0 auto 40px;
+  padding: 16px 22px 0;
+}
+.contact-card { display: flex; flex-direction: column; gap: 0; }
+.contact-week-range {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-sub);
+  margin-left: 8px;
+}
+.contact-hint {
+  font-size: 12px;
+  color: var(--text-sub);
+  background: var(--warm-beige);
+  border: 1px solid var(--warm-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 16px;
+}
+.contact-list { display: flex; flex-direction: column; gap: 18px; }
+
+/* 每天的區塊 */
+.contact-day-group {}
+.contact-day-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--teal-dark);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  padding: 0 0 8px;
+  border-bottom: 1.5px solid var(--warm-border);
+  margin-bottom: 8px;
+}
+.contact-day-header .day-badge {
+  background: var(--teal-dark);
+  color: #fff;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 11px;
+}
+.contact-day-header .day-holiday {
+  color: #c04040;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* 每筆約診列 */
+.contact-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--warm-border);
+  border-radius: 10px;
+  background: var(--warm-card);
+  margin-bottom: 6px;
+  transition: box-shadow .15s;
+}
+.contact-row:hover { box-shadow: var(--shadow-card); }
+.contact-row.contacted-phone { border-left: 3px solid #2563eb; }
+.contact-row.contacted-line  { border-left: 3px solid #06c755; }
+
+.contact-time {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-sub);
+  min-width: 88px;
+  white-space: nowrap;
+}
+.contact-patient {
+  flex: 1;
+  min-width: 0;
+}
+.contact-patient-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+.contact-patient-phone {
+  font-size: 12px;
+  color: var(--text-sub);
+  margin-top: 2px;
+}
+.contact-phone-link {
+  color: var(--teal);
+  text-decoration: none;
+  font-weight: 600;
+}
+.contact-phone-link:hover { text-decoration: underline; }
+.contact-doc-chip {
+  font-size: 11px;
+  padding: 2px 9px;
+  border-radius: 6px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.contact-status-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.contact-status-badge.phone { background: #dbeafe; color: #1d4ed8; }
+.contact-status-badge.line  { background: #dcfce7; color: #15803d; }
+
+.contact-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.btn-contact-phone {
+  display: flex; align-items: center; gap: 5px;
+  padding: 6px 13px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1.5px solid #bfdbfe;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .15s, transform .1s;
+}
+.btn-contact-phone:hover { background: #dbeafe; }
+.btn-contact-phone:active { transform: scale(.96); }
+
+.btn-contact-line {
+  display: flex; align-items: center; gap: 5px;
+  padding: 6px 13px;
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1.5px solid #bbf7d0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .15s, transform .1s;
+}
+.btn-contact-line:hover { background: #dcfce7; }
+.btn-contact-line:active { transform: scale(.96); }
+
+@media (max-width: 640px) {
+  .contact-layout { padding: 12px 12px 0; }
+  .contact-row { flex-wrap: wrap; }
+  .contact-actions { width: 100%; justify-content: flex-end; }
+}

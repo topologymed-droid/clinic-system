@@ -749,5 +749,74 @@ def restore_appointment(body: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/appointments/week")
+def get_week_appointments(from_date: str):
+    """回傳從 from_date 起 7 天的所有約診"""
+    try:
+        service   = get_calendar_service()
+        day_start = datetime.strptime(from_date, "%Y-%m-%d")
+        day_end   = day_start + timedelta(days=7)
+        time_min  = day_start.isoformat() + '+08:00'
+        time_max  = day_end.isoformat()   + '+08:00'
+
+        all_events = []
+        for cal_id in [CALENDAR_MAIN, CALENDAR_SU]:
+            result = service.events().list(
+                calendarId=cal_id,
+                timeMin=time_min,
+                timeMax=time_max,
+                singleEvents=True,
+                orderBy='startTime',
+                maxResults=500,
+            ).execute()
+            for ev in result.get('items', []):
+                ev['_isSuCalendar'] = (cal_id == CALENDAR_SU)
+                all_events.append(ev)
+
+        all_events.sort(key=lambda e: e.get('start', {}).get('dateTime', e.get('start', {}).get('date', '')))
+        return {"events": all_events}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/appointments/{event_id}/contact")
+def mark_contact(event_id: str, body: dict):
+    """在 Google 日曆事件標題前加上「電話OK」或「LINE OK」"""
+    try:
+        contact_type = body.get("contact_type", "phone")
+        prefix = "電話OK " if contact_type == "phone" else "LINE OK "
+
+        service      = get_calendar_service()
+        found_cal_id = None
+        ev           = None
+        for cal_id in [CALENDAR_MAIN, CALENDAR_SU]:
+            try:
+                ev = service.events().get(calendarId=cal_id, eventId=event_id).execute()
+                found_cal_id = cal_id
+                break
+            except Exception:
+                continue
+        if not ev:
+            raise HTTPException(status_code=404, detail="找不到此約診")
+
+        current_summary = ev.get('summary', '')
+        # 移除舊的聯絡標記（若有）
+        for p in ["電話OK ", "LINE OK "]:
+            if current_summary.startswith(p):
+                current_summary = current_summary[len(p):]
+
+        new_summary = prefix + current_summary
+        service.events().patch(
+            calendarId=found_cal_id,
+            eventId=event_id,
+            body={'summary': new_summary}
+        ).execute()
+        return {"status": "ok", "summary": new_summary}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ─── Serve Frontend ───────────────────────────────────────────────────────────
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="static")

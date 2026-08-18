@@ -120,6 +120,7 @@ function switchTab(name) {
   document.getElementById(`view-${name}`).classList.remove('hidden');
   document.getElementById(`tab-${name}`).classList.add('active');
   if (name === 'calendar') renderCalendar();
+  if (name === 'contact')  loadContactList();
 }
 
 // ─── Date ─────────────────────────────────────────────────────────────────────
@@ -1576,6 +1577,155 @@ function cancelAppointmentFromSearch(eventId, summary) {
       doSearch(); // 重新搜尋更新結果
     } catch(e) { showToast('取消失敗：' + e.message, true); }
   });
+}
+
+// ─── 患者聯絡 ─────────────────────────────────────────────────────────────────
+async function loadContactList() {
+  const el   = document.getElementById('contactList');
+  const rng  = document.getElementById('contactWeekRange');
+  const today = new Date();
+  const fromStr = localDateStr(today);
+  const toDate  = new Date(today); toDate.setDate(toDate.getDate() + 6);
+  const toStr   = localDateStr(toDate);
+
+  // 顯示日期範圍
+  const fmt = d => `${d.getMonth()+1}/${d.getDate()}`;
+  rng.textContent = `（${fmt(today)} – ${fmt(toDate)}）`;
+
+  el.innerHTML = '<p class="placeholder-text">載入中…</p>';
+  try {
+    const res  = await fetch(`${API}/api/appointments/week?from_date=${fromStr}`);
+    if (!res.ok) throw new Error(await res.text());
+    const { events } = await res.json();
+
+    if (!events.length) {
+      el.innerHTML = '<p class="placeholder-text">這週沒有約診</p>';
+      return;
+    }
+
+    // 按日期分組
+    const groups = {};
+    for (const ev of events) {
+      const dt = ev.start?.dateTime;
+      if (!dt) continue;
+      const day = dt.slice(0, 10);
+      if (!groups[day]) groups[day] = [];
+      groups[day].push(ev);
+    }
+
+    const WEEKDAY = ['日','一','二','三','四','五','六'];
+    el.innerHTML = '';
+    for (const day of Object.keys(groups).sort()) {
+      const d       = new Date(day + 'T00:00:00');
+      const wd      = WEEKDAY[d.getDay()];
+      const holiday = getTwHoliday(day);
+      const isToday = day === fromStr;
+
+      const grpEl = document.createElement('div');
+      grpEl.className = 'contact-day-group';
+
+      const hdrEl = document.createElement('div');
+      hdrEl.className = 'contact-day-header';
+      hdrEl.innerHTML =
+        `<span class="day-badge">${day.slice(5).replace('-','/')} 週${wd}${isToday ? ' 今日' : ''}</span>` +
+        (holiday ? `<span class="day-holiday">${holiday}</span>` : '');
+      grpEl.appendChild(hdrEl);
+
+      for (const ev of groups[day]) {
+        grpEl.appendChild(buildContactRow(ev));
+      }
+      el.appendChild(grpEl);
+    }
+  } catch(e) {
+    el.innerHTML = `<p class="placeholder-text">載入失敗：${e.message}</p>`;
+  }
+}
+
+function buildContactRow(ev) {
+  const summary = ev.summary || '';
+  const desc    = ev.description || '';
+
+  // 判斷是否已聯絡
+  const alreadyPhone = summary.startsWith('電話OK ');
+  const alreadyLine  = summary.startsWith('LINE OK ');
+
+  // 解析電話
+  const phoneMatch = desc.match(/電話：([^\n]+)/);
+  const phone = phoneMatch ? phoneMatch[1].trim() : '';
+  const hasPhone = phone && phone !== '未提供';
+
+  // 解析患者名稱（去掉前綴標記）
+  let displaySummary = summary;
+  if (alreadyPhone) displaySummary = summary.slice('電話OK '.length);
+  if (alreadyLine)  displaySummary = summary.slice('LINE OK '.length);
+
+  // 解析時間
+  const startRaw = ev.start?.dateTime || '';
+  const endRaw   = ev.end?.dateTime   || '';
+  const toHM = s => s ? s.slice(11,16) : '';
+  const timeLabel = toHM(startRaw) + (endRaw ? `–${toHM(endRaw)}` : '');
+
+  // 醫師顏色
+  const doc = getDocFromSummary(displaySummary, ev);
+  const col = getDocColor(doc);
+
+  const row = document.createElement('div');
+  row.className = 'contact-row' +
+    (alreadyPhone ? ' contacted-phone' : alreadyLine ? ' contacted-line' : '');
+  row.dataset.eventId = ev.id;
+
+  row.innerHTML = `
+    <div class="contact-time">${escHtml(timeLabel)}</div>
+    <div class="contact-patient">
+      <div class="contact-patient-name">${escHtml(displaySummary)}</div>
+      <div class="contact-patient-phone">
+        ${hasPhone
+          ? `<a class="contact-phone-link" href="tel:${escHtml(phone.replace(/-/g,''))}"><i class="fa-solid fa-phone" style="font-size:10px;"></i> ${escHtml(phone)}</a>`
+          : '<span style="color:var(--text-hint);">未留電話</span>'}
+      </div>
+    </div>
+    <span class="contact-doc-chip chip" style="background:${col.bg}22;color:${col.bg};border:1px solid ${col.bg}44;">${escHtml(doc ? getDocLabel(doc) : '?')}</span>
+    ${alreadyPhone ? '<span class="contact-status-badge phone"><i class="fa-solid fa-phone"></i> 電話OK</span>' :
+      alreadyLine  ? '<span class="contact-status-badge line"><i class="fa-brands fa-line"></i> LINE OK</span>' :
+      `<div class="contact-actions">
+        <button class="btn-contact-phone" onclick="doContact('${ev.id}','phone',this)">
+          <i class="fa-solid fa-phone"></i> 電話
+        </button>
+        <button class="btn-contact-line" onclick="doContact('${ev.id}','line',this)">
+          <i class="fa-brands fa-line"></i> LINE
+        </button>
+      </div>`}
+  `;
+  return row;
+}
+
+async function doContact(eventId, type, btnEl) {
+  const row = btnEl.closest('.contact-row');
+  const actions = row.querySelector('.contact-actions');
+  actions.innerHTML = '<span style="font-size:12px;color:var(--text-sub);">更新中…</span>';
+
+  try {
+    const res = await fetch(`${API}/api/appointments/${eventId}/contact`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ contact_type: type }),
+    });
+    if (!res.ok) throw new Error((await res.json()).detail || '更新失敗');
+
+    const badge = type === 'phone'
+      ? '<span class="contact-status-badge phone"><i class="fa-solid fa-phone"></i> 電話OK</span>'
+      : '<span class="contact-status-badge line"><i class="fa-brands fa-line"></i> LINE OK</span>';
+    actions.outerHTML = badge;
+
+    row.classList.remove('contacted-phone', 'contacted-line');
+    row.classList.add(type === 'phone' ? 'contacted-phone' : 'contacted-line');
+    showToast(type === 'phone' ? '✅ 電話OK 已標記' : '✅ LINE OK 已標記');
+  } catch(e) {
+    actions.innerHTML = `
+      <button class="btn-contact-phone" onclick="doContact('${eventId}','phone',this)"><i class="fa-solid fa-phone"></i> 電話</button>
+      <button class="btn-contact-line"  onclick="doContact('${eventId}','line',this)"><i class="fa-brands fa-line"></i> LINE</button>`;
+    showToast('標記失敗：' + e.message, true);
+  }
 }
 
 // ─── Calendar ─────────────────────────────────────────────────────────────────

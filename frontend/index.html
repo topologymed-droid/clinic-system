@@ -30,6 +30,7 @@
   <button class="tab"        id="tab-calendar" onclick="switchTab('calendar')"><i class="fa-solid fa-calendar-days"></i> 月曆檢視</button>
   <button class="tab"        id="tab-search"   onclick="switchTab('search')"><i class="fa-solid fa-magnifying-glass"></i> 查詢患者</button>
   <button class="tab"        id="tab-doctors"  onclick="switchTab('doctors')"><i class="fa-solid fa-user-doctor"></i> 醫師管理</button>
+  <button class="tab"        id="tab-contact"  onclick="switchTab('contact')"><i class="fa-solid fa-phone"></i> 患者聯絡</button>
 </nav>
 
 <!-- ══════════════════════════════════════════════════════════════════════════ -->
@@ -247,6 +248,23 @@
 
 </div>
 </div><!-- /view-doctors -->
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<!--  TAB: 患者聯絡                                                              -->
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<div id="view-contact" class="tab-view hidden">
+<div class="contact-layout">
+
+  <section class="card contact-card">
+    <div class="card-title"><span class="icon"><i class="fa-solid fa-phone"></i></span> 患者聯絡 <span class="contact-week-range" id="contactWeekRange"></span></div>
+    <div class="contact-hint">以下為今日起 7 天內的約診患者，聯絡後點選確認方式，系統將自動在 Google 日曆標題前加上記號。</div>
+    <div id="contactList" class="contact-list">
+      <p class="placeholder-text">載入中…</p>
+    </div>
+  </section>
+
+</div>
+</div><!-- /view-contact -->
 
 <!-- ── Modal (成功 / 確認) ──────────────────────────────────────────────────── -->
 <div class="modal-backdrop" id="successModal">
