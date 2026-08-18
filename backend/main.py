@@ -806,7 +806,8 @@ def mark_contact(event_id: str, body: dict):
             if current_summary.startswith(p):
                 current_summary = current_summary[len(p):]
 
-        new_summary = prefix + current_summary
+        # contact_type == "cancel" 只移除標記，不加新的
+        new_summary = current_summary if contact_type == "cancel" else prefix + current_summary
         service.events().patch(
             calendarId=found_cal_id,
             eventId=event_id,

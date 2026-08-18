@@ -1841,3 +1841,22 @@ nav.tab-bar {
   .contact-row { flex-wrap: wrap; }
   .contact-actions { width: 100%; justify-content: flex-end; }
 }
+
+.contact-done-wrap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.btn-contact-cancel {
+  background: none;
+  border: 1px solid var(--warm-border);
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-size: 11px;
+  color: var(--text-hint);
+  cursor: pointer;
+  line-height: 1.6;
+  transition: background .12s, color .12s;
+}
+.btn-contact-cancel:hover { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; }

@@ -1685,8 +1685,8 @@ function buildContactRow(ev) {
       </div>
     </div>
     <span class="contact-doc-chip chip" style="background:${col.bg}22;color:${col.bg};border:1px solid ${col.bg}44;">${escHtml(doc ? getDocLabel(doc) : '?')}</span>
-    ${alreadyPhone ? '<span class="contact-status-badge phone"><i class="fa-solid fa-phone"></i> 電話OK</span>' :
-      alreadyLine  ? '<span class="contact-status-badge line"><i class="fa-brands fa-line"></i> LINE OK</span>' :
+    ${alreadyPhone ? contactedHTML(ev.id, 'phone') :
+      alreadyLine  ? contactedHTML(ev.id, 'line')  :
       `<div class="contact-actions">
         <button class="btn-contact-phone" onclick="doContact('${ev.id}','phone',this)">
           <i class="fa-solid fa-phone"></i> 電話
@@ -1699,10 +1699,21 @@ function buildContactRow(ev) {
   return row;
 }
 
+function contactedHTML(eventId, type) {
+  const icon  = type === 'phone' ? '<i class="fa-solid fa-phone"></i>' : '<i class="fa-brands fa-line"></i>';
+  const label = type === 'phone' ? '電話OK' : 'LINE OK';
+  const cls   = type === 'phone' ? 'phone' : 'line';
+  return `<div class="contact-done-wrap">
+    <span class="contact-status-badge ${cls}">${icon} ${label}</span>
+    <button class="btn-contact-cancel" onclick="doContact('${eventId}','cancel',this)" title="取消標記">✕</button>
+  </div>`;
+}
+
 async function doContact(eventId, type, btnEl) {
-  const row = btnEl.closest('.contact-row');
-  const actions = row.querySelector('.contact-actions');
-  actions.innerHTML = '<span style="font-size:12px;color:var(--text-sub);">更新中…</span>';
+  const row     = btnEl.closest('.contact-row');
+  const wrapper = btnEl.closest('.contact-actions, .contact-done-wrap');
+  const prev    = wrapper.outerHTML;
+  wrapper.innerHTML = '<span style="font-size:12px;color:var(--text-sub);">更新中…</span>';
 
   try {
     const res = await fetch(`${API}/api/appointments/${eventId}/contact`, {
@@ -1712,19 +1723,23 @@ async function doContact(eventId, type, btnEl) {
     });
     if (!res.ok) throw new Error((await res.json()).detail || '更新失敗');
 
-    const badge = type === 'phone'
-      ? '<span class="contact-status-badge phone"><i class="fa-solid fa-phone"></i> 電話OK</span>'
-      : '<span class="contact-status-badge line"><i class="fa-brands fa-line"></i> LINE OK</span>';
-    actions.outerHTML = badge;
-
     row.classList.remove('contacted-phone', 'contacted-line');
-    row.classList.add(type === 'phone' ? 'contacted-phone' : 'contacted-line');
-    showToast(type === 'phone' ? '✅ 電話OK 已標記' : '✅ LINE OK 已標記');
+
+    if (type === 'cancel') {
+      // 恢復成兩個按鈕
+      wrapper.outerHTML = `<div class="contact-actions">
+        <button class="btn-contact-phone" onclick="doContact('${eventId}','phone',this)"><i class="fa-solid fa-phone"></i> 電話</button>
+        <button class="btn-contact-line"  onclick="doContact('${eventId}','line',this)"><i class="fa-brands fa-line"></i> LINE</button>
+      </div>`;
+      showToast('✅ 標記已取消');
+    } else {
+      wrapper.outerHTML = contactedHTML(eventId, type);
+      row.classList.add(type === 'phone' ? 'contacted-phone' : 'contacted-line');
+      showToast(type === 'phone' ? '✅ 電話OK 已標記' : '✅ LINE OK 已標記');
+    }
   } catch(e) {
-    actions.innerHTML = `
-      <button class="btn-contact-phone" onclick="doContact('${eventId}','phone',this)"><i class="fa-solid fa-phone"></i> 電話</button>
-      <button class="btn-contact-line"  onclick="doContact('${eventId}','line',this)"><i class="fa-brands fa-line"></i> LINE</button>`;
-    showToast('標記失敗：' + e.message, true);
+    wrapper.outerHTML = prev;
+    showToast('操作失敗：' + e.message, true);
   }
 }
 
