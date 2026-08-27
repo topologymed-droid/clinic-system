@@ -48,7 +48,9 @@
         <div class="form-group">
           <label class="field-label" for="date">日期</label>
           <div class="date-input-row">
+            <button type="button" class="btn-day-nav" onclick="goDateOffset(-1)" title="前一天">‹</button>
             <input type="text" id="date" required readonly placeholder="選擇日期" />
+            <button type="button" class="btn-day-nav" onclick="goDateOffset(1)" title="後一天">›</button>
             <button type="button" class="btn-today" onclick="goToday()">今日</button>
           </div>
         </div>

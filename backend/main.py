@@ -785,7 +785,7 @@ def mark_contact(event_id: str, body: dict):
     """在 Google 日曆事件標題前加上「電話OK」或「LINE OK」"""
     try:
         contact_type = body.get("contact_type", "phone")
-        prefix = "電話OK " if contact_type == "phone" else "LINE OK "
+        prefix = {"phone": "電話OK ", "line": "LINE OK ", "missed": "沒接 "}.get(contact_type, "電話OK ")
 
         service      = get_calendar_service()
         found_cal_id = None
@@ -802,7 +802,7 @@ def mark_contact(event_id: str, body: dict):
 
         current_summary = ev.get('summary', '')
         # 移除舊的聯絡標記（若有）
-        for p in ["電話OK ", "LINE OK "]:
+        for p in ["電話OK ", "LINE OK ", "沒接 "]:
             if current_summary.startswith(p):
                 current_summary = current_summary[len(p):]
 

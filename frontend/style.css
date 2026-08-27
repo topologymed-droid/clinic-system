@@ -1860,3 +1860,39 @@ nav.tab-bar {
   transition: background .12s, color .12s;
 }
 .btn-contact-cancel:hover { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; }
+
+/* 前/後一天按鈕 */
+.btn-day-nav {
+  padding: 0 10px;
+  height: 40px;
+  background: var(--warm-beige);
+  border: 1.5px solid var(--warm-border);
+  border-radius: 8px;
+  font-size: 18px;
+  color: var(--text-sub);
+  cursor: pointer;
+  line-height: 1;
+  transition: background .15s;
+  flex-shrink: 0;
+}
+.btn-day-nav:hover { background: var(--teal-light); color: var(--teal-dark); }
+
+/* 沒接按鈕 */
+.btn-contact-missed {
+  display: flex; align-items: center; justify-content: center;
+  padding: 6px 11px;
+  background: #fff1f1;
+  color: #dc2626;
+  border: 1.5px solid #fecaca;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .15s, transform .1s;
+}
+.btn-contact-missed:hover { background: #fee2e2; }
+.btn-contact-missed:active { transform: scale(.96); }
+
+/* 沒接 badge */
+.contact-status-badge.missed { background: #fee2e2; color: #dc2626; }
+.contact-row.contacted-missed { border-left: 3px solid #dc2626; }

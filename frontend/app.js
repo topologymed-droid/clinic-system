@@ -172,6 +172,16 @@ function goToday() {
   loadAppointments();
 }
 
+function goDateOffset(days) {
+  const cur = document.getElementById('date').value;
+  if (!cur) return goToday();
+  const d = new Date(cur + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  setDateValue(localDateStr(d));
+  updateApptCardTitle();
+  loadAppointments();
+}
+
 async function calGoToday() {
   const today = new Date();
   calYear        = today.getFullYear();
@@ -1646,8 +1656,9 @@ function buildContactRow(ev) {
   const desc    = ev.description || '';
 
   // 判斷是否已聯絡
-  const alreadyPhone = summary.startsWith('電話OK ');
-  const alreadyLine  = summary.startsWith('LINE OK ');
+  const alreadyPhone  = summary.startsWith('電話OK ');
+  const alreadyLine   = summary.startsWith('LINE OK ');
+  const alreadyMissed = summary.startsWith('沒接 ');
 
   // 解析電話
   const phoneMatch = desc.match(/電話：([^\n]+)/);
@@ -1656,8 +1667,9 @@ function buildContactRow(ev) {
 
   // 解析患者名稱（去掉前綴標記）
   let displaySummary = summary;
-  if (alreadyPhone) displaySummary = summary.slice('電話OK '.length);
-  if (alreadyLine)  displaySummary = summary.slice('LINE OK '.length);
+  if (alreadyPhone)  displaySummary = summary.slice('電話OK '.length);
+  if (alreadyLine)   displaySummary = summary.slice('LINE OK '.length);
+  if (alreadyMissed) displaySummary = summary.slice('沒接 '.length);
 
   // 解析時間
   const startRaw = ev.start?.dateTime || '';
@@ -1671,7 +1683,7 @@ function buildContactRow(ev) {
 
   const row = document.createElement('div');
   row.className = 'contact-row' +
-    (alreadyPhone ? ' contacted-phone' : alreadyLine ? ' contacted-line' : '');
+    (alreadyPhone ? ' contacted-phone' : alreadyLine ? ' contacted-line' : alreadyMissed ? ' contacted-missed' : '');
   row.dataset.eventId = ev.id;
 
   row.innerHTML = `
@@ -1685,8 +1697,9 @@ function buildContactRow(ev) {
       </div>
     </div>
     <span class="contact-doc-chip chip" style="background:${col.bg}22;color:${col.bg};border:1px solid ${col.bg}44;">${escHtml(doc ? getDocLabel(doc) : '?')}</span>
-    ${alreadyPhone ? contactedHTML(ev.id, 'phone') :
-      alreadyLine  ? contactedHTML(ev.id, 'line')  :
+    ${alreadyPhone  ? contactedHTML(ev.id, 'phone')  :
+      alreadyLine   ? contactedHTML(ev.id, 'line')   :
+      alreadyMissed ? contactedHTML(ev.id, 'missed') :
       `<div class="contact-actions">
         <button class="btn-contact-phone" onclick="doContact('${ev.id}','phone',this)">
           <i class="fa-solid fa-phone"></i> 電話
@@ -1694,15 +1707,20 @@ function buildContactRow(ev) {
         <button class="btn-contact-line" onclick="doContact('${ev.id}','line',this)">
           <i class="fa-brands fa-line"></i> LINE
         </button>
+        <button class="btn-contact-missed" onclick="doContact('${ev.id}','missed',this)" title="沒接">
+          <i class="fa-solid fa-phone-slash"></i>
+        </button>
       </div>`}
   `;
   return row;
 }
 
 function contactedHTML(eventId, type) {
-  const icon  = type === 'phone' ? '<i class="fa-solid fa-phone"></i>' : '<i class="fa-brands fa-line"></i>';
-  const label = type === 'phone' ? '電話OK' : 'LINE OK';
-  const cls   = type === 'phone' ? 'phone' : 'line';
+  const icon  = type === 'phone' ? '<i class="fa-solid fa-phone"></i>'
+              : type === 'line'  ? '<i class="fa-brands fa-line"></i>'
+              :                    '<i class="fa-solid fa-phone-slash"></i>';
+  const label = type === 'phone' ? '電話OK' : type === 'line' ? 'LINE OK' : '沒接';
+  const cls   = type === 'phone' ? 'phone'  : type === 'line' ? 'line'    : 'missed';
   return `<div class="contact-done-wrap">
     <span class="contact-status-badge ${cls}">${icon} ${label}</span>
     <button class="btn-contact-cancel" onclick="doContact('${eventId}','cancel',this)" title="取消標記">✕</button>
@@ -1723,19 +1741,20 @@ async function doContact(eventId, type, btnEl) {
     });
     if (!res.ok) throw new Error((await res.json()).detail || '更新失敗');
 
-    row.classList.remove('contacted-phone', 'contacted-line');
+    row.classList.remove('contacted-phone', 'contacted-line', 'contacted-missed');
 
     if (type === 'cancel') {
       // 恢復成兩個按鈕
       wrapper.outerHTML = `<div class="contact-actions">
-        <button class="btn-contact-phone" onclick="doContact('${eventId}','phone',this)"><i class="fa-solid fa-phone"></i> 電話</button>
-        <button class="btn-contact-line"  onclick="doContact('${eventId}','line',this)"><i class="fa-brands fa-line"></i> LINE</button>
+        <button class="btn-contact-phone"  onclick="doContact('${eventId}','phone',this)"><i class="fa-solid fa-phone"></i> 電話</button>
+        <button class="btn-contact-line"   onclick="doContact('${eventId}','line',this)"><i class="fa-brands fa-line"></i> LINE</button>
+        <button class="btn-contact-missed" onclick="doContact('${eventId}','missed',this)" title="沒接"><i class="fa-solid fa-phone-slash"></i></button>
       </div>`;
       showToast('✅ 標記已取消');
     } else {
       wrapper.outerHTML = contactedHTML(eventId, type);
-      row.classList.add(type === 'phone' ? 'contacted-phone' : 'contacted-line');
-      showToast(type === 'phone' ? '✅ 電話OK 已標記' : '✅ LINE OK 已標記');
+      row.classList.add(type === 'phone' ? 'contacted-phone' : type === 'line' ? 'contacted-line' : 'contacted-missed');
+      showToast(type === 'phone' ? '✅ 電話OK 已標記' : type === 'line' ? '✅ LINE OK 已標記' : '📵 沒接 已標記');
     }
   } catch(e) {
     wrapper.outerHTML = prev;
