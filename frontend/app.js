@@ -1894,7 +1894,7 @@ async function renderYearCalendar() {
         }
       }
 
-      cell.addEventListener('click', () => selectCalDay(dateStr, evs));
+      cell.addEventListener('click', () => selectCalDay(dateStr, evs, cell));
       gridEl.appendChild(cell);
     }
 
@@ -2005,7 +2005,7 @@ function buildCalGrid(firstDay, lastDay, eventsMap) {
     }
     cell.appendChild(chipsEl);
     cell.appendChild(freeEl);
-    cell.addEventListener('click', () => selectCalDay(dateStr, evs));
+    cell.addEventListener('click', () => selectCalDay(dateStr, evs, cell));
     grid.appendChild(cell);
   }
 
@@ -2020,21 +2020,13 @@ function buildCalGrid(firstDay, lastDay, eventsMap) {
   }
 }
 
-function selectCalDay(dateStr, evs) {
+function selectCalDay(dateStr, evs, cellEl) {
   calSelectedDate = dateStr;
 
   document.querySelectorAll('.cal-day.selected, .mini-day.selected')
     .forEach(el => el.classList.remove('selected'));
 
-  // 找到並標記選取的格子
-  const allCells = (calView === 'month')
-    ? document.querySelectorAll('.cal-day')
-    : document.querySelectorAll('.mini-day');
-  allCells.forEach(el => {
-    if (el.querySelector('.cal-day-num, .mini-day-num')?.textContent === String(parseInt(dateStr.slice(8)))) {
-      // 避免誤選不同月份同日期：只標記有 click listener 的
-    }
-  });
+  if (cellEl) cellEl.classList.add('selected');
 
   // 右側詳細
   const d = new Date(dateStr + 'T00:00:00');
