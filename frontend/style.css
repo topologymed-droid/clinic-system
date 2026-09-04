@@ -962,7 +962,7 @@ nav.tab-bar {
   overflow: hidden;
 }
 .cal-day:hover { border-color: var(--teal-mid); background: var(--teal-light); }
-.cal-day.selected { border-color: var(--teal); background: var(--teal-light); box-shadow: 0 0 0 2px rgba(74,155,142,.2); }
+.cal-day.selected { border: 2.5px solid var(--teal); background: var(--teal-light); box-shadow: 0 0 0 3px rgba(58,107,94,.25); }
 .cal-day.today .cal-day-num { background: var(--teal); color: white; border-radius: 50%; }
 .cal-day.other-month { background: transparent; border-color: transparent; cursor: default; opacity: .45; }
 .cal-day.other-month:hover { background: transparent; border-color: transparent; }
