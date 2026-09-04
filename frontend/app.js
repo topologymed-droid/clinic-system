@@ -1121,13 +1121,17 @@ async function undoDelete() {
 }
 
 // ─── Edit Appointment ─────────────────────────────────────────────────────────
+function stripContactPrefix(s) {
+  return s.replace(/^(電話OK |LINE OK |沒接 )/, '');
+}
+
 function getPatientNameFromEvent(ev) {
   // 先從 description 的「患者：」行取
   const desc = ev.description || '';
   const m = desc.match(/患者：(.+)/);
   if (m) return m[1].trim();
-  // 退路：從 summary 解析
-  let s = ev.summary || '';
+  // 退路：從 summary 解析（先去掉聯絡標記前綴）
+  let s = stripContactPrefix(ev.summary || '');
   if (s.includes(': ')) s = s.split(': ').slice(1).join(': ');
   if (s.startsWith('NP ')) s = s.slice(3);
   s = s.replace(/^Dr\.\S+\s+/, '');
@@ -1146,7 +1150,7 @@ function getEventMeta(ev) {
 
   // fallback 2：從 summary 標題解析（去掉約診者前綴、NP、Dr.X、患者姓名）
   if (!cp) {
-    let s = (ev.summary || '').trim();
+    let s = stripContactPrefix((ev.summary || '').trim());
     // 去掉 "約診者: " 或 "約診者： " 前綴（半形 / 全形冒號皆支援）
     s = s.replace(/^[^:\uff1a]{1,8}[:\uff1a]\s*/, '');
     // 去掉 NP 前綴
