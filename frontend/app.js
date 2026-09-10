@@ -1309,6 +1309,22 @@ function editAppointment(eventId) {
   initTimeInputShowAll(document.getElementById('editStart'));
   initTimeInputShowAll(document.getElementById('editEnd'));
 
+  // editStart 變更時過濾結束時間選項
+  function updateEditEndOptions() {
+    const startRaw = document.getElementById('editStart').value.trim();
+    const [sh, sm] = parseTime(startRaw);
+    const all = timeSlots();
+    if (sh === null) { fillDatalist('editEndList', all); return; }
+    const startMins = sh * 60 + sm;
+    const filtered = all.filter(t => {
+      const [h, m] = t.split(':').map(Number);
+      return h * 60 + m > startMins;
+    });
+    fillDatalist('editEndList', filtered.length ? filtered : all);
+  }
+  document.getElementById('editStart').addEventListener('change', updateEditEndOptions);
+  updateEditEndOptions(); // 開啟時立即套用
+
   // 渲染約診者 chips
   renderEditBookerChips();
   renderComplaintShortcuts('editComplaint', 'editComplaintShortcuts');
