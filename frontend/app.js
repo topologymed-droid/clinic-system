@@ -87,6 +87,10 @@ document.addEventListener('DOMContentLoaded', () => {
   loadAppointments();
 
   document.getElementById('appointmentForm').addEventListener('submit', handleSubmit);
+  // 組字中按 Enter 不送出表單（中文 IME 選字）
+  document.getElementById('appointmentForm').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.isComposing || e.keyCode === 229)) e.preventDefault();
+  });
   document.getElementById('searchInput').addEventListener('keydown', e => {
     if (e.key === 'Enter') doSearch();
   });
@@ -724,8 +728,20 @@ function initPatientAutocomplete() {
     }
   }
 
-  // 輸入時：debounce 300ms 後送出查詢
+  // 追蹤 IME 組字狀態（中文/日文輸入法選字中）
+  let isComposing = false;
+  input.addEventListener('compositionstart', () => { isComposing = true; });
+  input.addEventListener('compositionend',   () => {
+    isComposing = false;
+    // 組字結束後才觸發建議查詢
+    clearTimeout(suggestTimer);
+    const q = input.value.trim();
+    if (q) suggestTimer = setTimeout(() => showSuggestions(q), 300);
+  });
+
+  // 輸入時：debounce 300ms 後送出查詢（組字中跳過）
   input.addEventListener('input', () => {
+    if (isComposing) return;
     clearTimeout(suggestTimer);
     const q = input.value.trim();
     if (!q) { dropdown.style.display = 'none'; return; }
@@ -743,8 +759,9 @@ function initPatientAutocomplete() {
     setTimeout(() => { dropdown.style.display = 'none'; }, 200);
   });
 
-  // 鍵盤上下選擇
+  // 鍵盤上下選擇（組字中忽略所有導航鍵，避免輸入法 Enter 誤觸）
   input.addEventListener('keydown', e => {
+    if (isComposing || e.isComposing) return;
     const items = dropdown.querySelectorAll('.autocomplete-item');
     if (!items.length) return;
     const active = dropdown.querySelector('.autocomplete-item.active');
@@ -759,6 +776,7 @@ function initPatientAutocomplete() {
       items[(idx - 1 + items.length) % items.length].classList.add('active');
     } else if (e.key === 'Enter') {
       if (active) { e.preventDefault(); active.dispatchEvent(new Event('mousedown')); }
+      else if (dropdown.style.display !== 'none') { e.preventDefault(); dropdown.style.display = 'none'; }
     } else if (e.key === 'Escape') {
       dropdown.style.display = 'none';
     }
