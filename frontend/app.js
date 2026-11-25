@@ -941,8 +941,14 @@ function updateRemainingSlots(events, date) {
   const now = new Date();
   const nowMins = isToday ? now.getHours() * 60 + now.getMinutes() : 0;
 
-  // 所有 15 分鐘時段（09:00 ~ 22:00）
-  const all = timeSlots(9, 0, 22);
+  // 診所開診時段：早診 09–12、午診 14–17、晚診 18–21
+  const clinicRanges = [[9*60, 12*60], [14*60, 17*60], [18*60, 21*60]];
+  const inClinicHours = m => clinicRanges.some(([s, e]) => m >= s && m < e);
+
+  const all = timeSlots(9, 0, 22).filter(t => {
+    const [h, m] = t.split(':').map(Number);
+    return inClinicHours(h * 60 + m);
+  });
 
   // 被約診佔用的時段
   const busy = new Set();
