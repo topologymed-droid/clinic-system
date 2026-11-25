@@ -65,6 +65,8 @@ let bookersList       = [];
 let selectedBooker    = '';
 let editSelectedBooker = '';
 let allPatientNames   = [];
+let patientLookupTimer = null;
+let patientJustSelectedAutocomplete = false;
 let calYear         = new Date().getFullYear();
 let calMonth        = new Date().getMonth(); // 0-indexed
 let calEvents       = {};  // { 'YYYY-MM-DD': [events] }
@@ -104,7 +106,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('endTime').addEventListener('change', updateDurationBadge);
 
   // 患者姓名自動提示上次醫師
-  let patientLookupTimer = null;
   document.getElementById('patientName').addEventListener('input', () => {
     clearTimeout(patientLookupTimer);
     const name = document.getElementById('patientName').value.trim();
@@ -112,6 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
     patientLookupTimer = setTimeout(() => lookupPatientDoctor(name), 500);
   });
   document.getElementById('patientName').addEventListener('blur', () => {
+    if (patientJustSelectedAutocomplete) { patientJustSelectedAutocomplete = false; return; }
     const name = document.getElementById('patientName').value.trim();
     if (name.length >= 2) lookupPatientDoctor(name);
   });
@@ -788,6 +790,9 @@ function selectPatientName(name) {
   if (input) input.value = name;
   const dropdown = document.getElementById('patientAutocomplete');
   if (dropdown) dropdown.style.display = 'none';
+  // 取消仍在等待的 debounce 計時器，避免 blur 後重複觸發
+  clearTimeout(patientLookupTimer);
+  patientJustSelectedAutocomplete = true;
   lookupPatientDoctor(name);
 }
 
