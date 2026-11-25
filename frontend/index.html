@@ -140,6 +140,7 @@
           <button class="btn-add-appt" onclick="focusForm()"><i class="fa-solid fa-plus"></i> 新增</button>
         </div>
       </div>
+      <div id="remainingSlotsBar" class="remaining-slots-bar" onclick="showTimeline()" style="display:none;"></div>
       <div id="appointmentsList" class="appointments-list">
         <p class="placeholder-text">載入中…</p>
       </div>
@@ -267,6 +268,19 @@
 
 </div>
 </div><!-- /view-contact -->
+
+<!-- ── Timeline Modal ───────────────────────────────────────────────────────── -->
+<div class="modal-backdrop" id="timelineModal" onclick="if(event.target===this)closeTimeline()">
+  <div class="timeline-box">
+    <div class="timeline-header">
+      <span id="timelineTitle">時間表</span>
+      <button class="timeline-close" onclick="closeTimeline()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="timeline-scroll" id="timelineScroll">
+      <div class="timeline-grid" id="timelineGrid"></div>
+    </div>
+  </div>
+</div>
 
 <!-- ── Modal (成功 / 確認) ──────────────────────────────────────────────────── -->
 <div class="modal-backdrop" id="successModal">

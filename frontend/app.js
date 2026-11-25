@@ -899,6 +899,8 @@ async function deleteBooker(id, name) {
 }
 
 // ─── Appointments (日列表) ─────────────────────────────────────────────────────
+let todayTimelineEvents = [];
+
 async function loadAppointments() {
   const date = document.getElementById('date').value;
   const list = document.getElementById('appointmentsList');
@@ -907,10 +909,133 @@ async function loadAppointments() {
   try {
     const res    = await fetch(`${API}/api/appointments?date=${date}`);
     const events = await res.json();
+    todayTimelineEvents = events;
     renderAppointmentsByDoctor(events, list);
+    updateRemainingSlots(events, date);
   } catch {
     list.innerHTML = '<p class="placeholder-text">（請確認後端已啟動並完成 Google 授權）</p>';
   }
+}
+
+function updateRemainingSlots(events, date) {
+  const bar = document.getElementById('remainingSlotsBar');
+  if (!bar) return;
+  const isToday = date === localDateStr(new Date());
+  const now = new Date();
+  const nowMins = isToday ? now.getHours() * 60 + now.getMinutes() : 0;
+
+  // 所有 15 分鐘時段（08:30 ~ 22:00）
+  const all = timeSlots(8, 30, 22);
+
+  // 被約診佔用的時段
+  const busy = new Set();
+  (events || []).forEach(ev => {
+    if (!ev.start?.dateTime || !ev.end?.dateTime) return;
+    const s = new Date(ev.start.dateTime), e = new Date(ev.end.dateTime);
+    const sm = s.getHours() * 60 + s.getMinutes();
+    const em = e.getHours() * 60 + e.getMinutes();
+    for (let m = sm; m < em; m += 15) busy.add(m);
+  });
+
+  // 剩餘時段（今日才算現在之後；非今日全部算）
+  const freeSlots = all.filter(t => {
+    const [h, m] = t.split(':').map(Number);
+    const mins = h * 60 + m;
+    if (isToday && mins <= nowMins) return false;
+    return !busy.has(mins);
+  });
+
+  if (!isToday) { bar.style.display = 'none'; return; }
+
+  bar.style.display = 'flex';
+  const next = freeSlots[0] || null;
+  bar.innerHTML = `
+    <span class="rs-icon"><i class="fa-regular fa-clock"></i></span>
+    <span>剩餘可約診時段</span>
+    <span class="rs-count">${freeSlots.length} 個</span>
+    ${next ? `<span class="rs-next">下一個 ${next} ›</span>` : ''}
+  `;
+}
+
+function showTimeline() {
+  const date = document.getElementById('date').value;
+  const d = new Date(date + 'T00:00:00');
+  const dateLabel = d.toLocaleDateString('zh-TW', { month:'long', day:'numeric', weekday:'short' });
+  document.getElementById('timelineTitle').textContent = dateLabel + ' 時間表';
+
+  const isToday = date === localDateStr(new Date());
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+
+  // 建立 appointment 區塊資料
+  const apptBlocks = [];
+  todayTimelineEvents.forEach(ev => {
+    if (!ev.start?.dateTime || !ev.end?.dateTime) return;
+    const s = new Date(ev.start.dateTime), e = new Date(ev.end.dateTime);
+    const sm = s.getHours() * 60 + s.getMinutes();
+    const em = e.getHours() * 60 + e.getMinutes();
+    const doc = getDocFromSummary(ev.summary || '', ev);
+    const col = getDocColor(doc);
+    const patient = getPatientNameFromEvent(ev);
+    apptBlocks.push({ sm, em, col, patient, summary: ev.summary || '' });
+  });
+
+  const SLOT_H = 22; // px per 15-min slot
+  const START = 8 * 60 + 30; // 08:30
+  const END   = 22 * 60;     // 22:00
+
+  let html = '<div style="position:relative;">';
+
+  // 時段行
+  for (let m = START; m < END; m += 15) {
+    const h = Math.floor(m / 60), min = m % 60;
+    const isHour = min === 0;
+    const isHalfHour = min === 30;
+    const label = isHour ? `${pad(h)}:00` : (isHalfHour ? `${pad(h)}:30` : '');
+    const labelClass = isHour ? 'tl-label hour' : 'tl-label';
+    const isPast = isToday && m < nowMins;
+    const isBusy = apptBlocks.some(a => m >= a.sm && m < a.em);
+    const slotClass = isPast ? 'tl-slot past' : (isBusy ? '' : 'tl-slot free');
+
+    html += `<div class="tl-row${isHour ? ' hour-start' : ''}">
+      <div class="${labelClass}">${label}</div>
+      <div class="tl-track">${slotClass ? `<div class="${slotClass}"></div>` : ''}</div>
+    </div>`;
+  }
+
+  // 약진 블록 overlay
+  apptBlocks.forEach(a => {
+    const top  = (a.sm - START) / 15 * SLOT_H + 2;
+    const height = Math.max((a.em - a.sm) / 15 * SLOT_H - 4, 20);
+    const dur = a.em - a.sm;
+    const durStr = dur >= 60 ? `${Math.floor(dur/60)}h${dur%60?dur%60+'m':''}` : `${dur}m`;
+    html += `<div class="tl-appt-block" style="top:${top}px;height:${height}px;left:50px;right:4px;background:${a.col.bg};color:${a.col.text || a.col.fg || '#fff'};">
+      <span style="font-size:10px;opacity:.8">${pad(Math.floor(a.sm/60))}:${pad(a.sm%60)}–${pad(Math.floor(a.em/60))}:${pad(a.em%60)}</span>
+      ${height > 32 ? `<span>${a.patient}</span>` : `&nbsp;${a.patient}`}
+    </div>`;
+  });
+
+  // 現在時間線
+  if (isToday && nowMins >= START && nowMins <= END) {
+    const top = (nowMins - START) / 15 * SLOT_H;
+    html += `<div class="tl-now-dot" style="top:${top - 3}px;"></div>`;
+    html += `<div class="tl-now-line" style="top:${top}px;"></div>`;
+  }
+
+  html += '</div>';
+
+  document.getElementById('timelineGrid').innerHTML = html;
+  document.getElementById('timelineModal').classList.add('open');
+
+  // 自動捲動到現在時間附近
+  if (isToday && nowMins >= START) {
+    const scrollTop = Math.max(0, (nowMins - START) / 15 * SLOT_H - 100);
+    setTimeout(() => { document.getElementById('timelineScroll').scrollTop = scrollTop; }, 50);
+  }
+}
+
+function closeTimeline() {
+  document.getElementById('timelineModal').classList.remove('open');
 }
 
 function renderAppointments(events, container) {
