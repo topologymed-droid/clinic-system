@@ -2312,7 +2312,7 @@ function calcFreeSlots(events) {
 // 分鐘 → "9." (整點) 或 "9:30" (非整點)
 function minsToCompact(m) {
   const h = Math.floor(m/60), min = m%60;
-  return min === 0 ? `${h}.` : `${h}:${pad(min)}`;
+  return min === 0 ? `${h}` : `${h}:${pad(min)}`;
 }
 
 // 空閒時段 → 顯示文字陣列
