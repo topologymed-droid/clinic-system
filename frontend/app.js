@@ -1006,7 +1006,7 @@ function showTimeline() {
   });
 
   const docs = Object.keys(docBusy);
-  const multiDoc = docs.length >= 2;
+  const multiDoc = docs.length >= 1;
 
   function freeRanges(busySet, start, end) {
     const ranges = [];
