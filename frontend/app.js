@@ -1149,6 +1149,13 @@ function renderAppointmentsByDoctor(events, container) {
     sections.map(g => {
       const col    = g.col;
       const drName = g.doc ? g.doc.name.replace('醫師','').trim() : '其他';
+      function getSessionLabel(mins) {
+        if (mins >= 9*60 && mins < 12*60) return '早診';
+        if (mins >= 14*60 && mins < 17*60) return '午診';
+        if (mins >= 18*60 && mins < 21*60) return '晚診';
+        return null;
+      }
+      let curSession = undefined;
       const rowsHtml = g.appts.map(ev => {
         const start = ev.start?.dateTime
           ? new Date(ev.start.dateTime).toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit', hour12:false })
@@ -1157,7 +1164,16 @@ function renderAppointmentsByDoctor(events, container) {
           ? new Date(ev.end.dateTime).toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit', hour12:false })
           : '';
         const sumRaw = (ev.summary || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-        return `
+        let divider = '';
+        if (ev.start?.dateTime) {
+          const mins = new Date(ev.start.dateTime).getHours() * 60 + new Date(ev.start.dateTime).getMinutes();
+          const sess = getSessionLabel(mins);
+          if (sess && sess !== curSession) {
+            curSession = sess;
+            divider = `<div class="appt-session-divider"><span>${sess}</span></div>`;
+          }
+        }
+        return divider + `
           <div class="appt-row-item" onclick="editAppointment('${ev.id}')"
             onmouseenter="showApptTooltip(event,'${ev.id}')" onmouseleave="hideApptTooltip()">
             <span class="appt-row-time" style="color:${col.bg};">${start}${end ? '–'+end : ''}</span>

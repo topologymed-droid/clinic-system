@@ -2034,6 +2034,28 @@ nav.tab-bar {
   padding: 4px 2px 2px;
 }
 /* 剩餘時段表格 */
+/* 診別分隔線 */
+.appt-session-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 4px;
+  padding: 0 12px;
+}
+.appt-session-divider::before,
+.appt-session-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--warm-border);
+}
+.appt-session-divider span {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-hint);
+  letter-spacing: .05em;
+  white-space: nowrap;
+}
 .tl-table {
   width: 100%;
   border-collapse: collapse;
