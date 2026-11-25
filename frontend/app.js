@@ -945,8 +945,6 @@ function updateRemainingSlots(events, date) {
     return !busy.has(mins);
   });
 
-  if (!isToday) { bar.style.display = 'none'; return; }
-
   bar.style.display = 'flex';
   const next = freeSlots[0] || null;
   bar.innerHTML = `
