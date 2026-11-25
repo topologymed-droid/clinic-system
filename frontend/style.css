@@ -2047,6 +2047,14 @@ nav.tab-bar {
   padding: 6px 8px 4px;
   border-bottom: 1px solid var(--warm-border);
 }
+.tl-table thead th + th {
+  padding-left: 14px;
+  border-left: 6px solid var(--warm-bg, #f5f0ea);
+}
+.tl-table tbody td + td {
+  padding-left: 14px;
+  border-left: 6px solid var(--warm-bg, #f5f0ea);
+}
 .tl-table tbody tr { border-bottom: 1px solid var(--warm-border); }
 .tl-sess-name {
   font-weight: 700;
