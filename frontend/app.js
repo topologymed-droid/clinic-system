@@ -750,11 +750,6 @@ function initPatientAutocomplete() {
     suggestTimer = setTimeout(() => showSuggestions(q), 300);
   });
 
-  // 重新 focus 時：若有輸入立即顯示
-  input.addEventListener('focus', () => {
-    const q = input.value.trim();
-    if (q) showSuggestions(q);
-  });
 
   // 失焦時延遲隱藏（讓 mousedown 先觸發）
   input.addEventListener('blur', () => {
