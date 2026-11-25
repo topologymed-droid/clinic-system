@@ -2056,6 +2056,35 @@ nav.tab-bar {
   letter-spacing: .05em;
   white-space: nowrap;
 }
+/* 剩餘時段 — 醫師分組列表 */
+.tl-doc-list { display: flex; flex-direction: column; gap: 10px; }
+.tl-doc-block { border-radius: 8px; overflow: hidden; border: 1px solid var(--warm-border); }
+.tl-doc-block-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.tl-doc-block-body { padding: 8px 12px 10px; }
+.tl-sess-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--warm-border);
+}
+.tl-sess-row:last-child { border-bottom: none; }
+.tl-sess-label {
+  flex-shrink: 0;
+  width: 32px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-sub);
+  padding-top: 3px;
+}
+.tl-sess-ranges { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; }
 .tl-table {
   width: 100%;
   border-collapse: collapse;

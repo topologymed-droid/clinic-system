@@ -994,8 +994,8 @@ function showTimeline() {
     { name: '晚診', start: 18*60, end: 21*60 },
   ];
 
-  const docBusy = {};   // label -> Set<mins>
-  const docObjs = {};   // label -> doctor object (for color)
+  const docBusy = {};
+  const docObjs = {};
   todayTimelineEvents.forEach(ev => {
     if (!ev.start?.dateTime || !ev.end?.dateTime) return;
     const s = new Date(ev.start.dateTime), e = new Date(ev.end.dateTime);
@@ -1008,7 +1008,6 @@ function showTimeline() {
   });
 
   const docs = Object.keys(docBusy);
-  const multiDoc = docs.length >= 1;
 
   function freeRanges(busySet, start, end) {
     const ranges = [];
@@ -1021,58 +1020,63 @@ function showTimeline() {
     return ranges;
   }
 
-  function fmtRange([s, e]) {
-    return pad(Math.floor(s/60)) + ':' + pad(s%60) + '–' + pad(Math.floor(e/60)) + ':' + pad(e%60);
+  function fmtRange(r) {
+    return pad(Math.floor(r[0]/60)) + ':' + pad(r[0]%60) + '–' + pad(Math.floor(r[1]/60)) + ':' + pad(r[1]%60);
+  }
+
+  function rangeColor(busySet, start, end) {
+    const total = (end - start) / 15;
+    let pastOrBusy = 0;
+    for (let m = start; m < end; m += 15) {
+      if (busySet.has(m) || (isToday && m <= nowMins)) pastOrBusy++;
+    }
+    const freeCount = total - pastOrBusy;
+    const ratio = freeCount / total;
+    if (ratio <= 1/3) return { bg: 'rgba(220,53,53,.12)', border: 'rgba(220,53,53,.4)', text: '#c0392b' };
+    if (ratio <= 1/2) return { bg: 'rgba(230,160,0,.12)', border: 'rgba(230,160,0,.4)', text: '#a07000' };
+    return { bg: 'rgba(74,155,142,.12)', border: 'rgba(74,155,142,.3)', text: 'var(--teal-dark)' };
   }
 
   const box = document.getElementById('timelineModal').querySelector('.timeline-box');
-  box.style.setProperty('--tl-width', multiDoc
-    ? Math.min(160 + docs.length * 150, window.innerWidth * 0.93) + 'px'
-    : '340px');
+  box.style.setProperty('--tl-width', '340px');
 
-  let html = '';
+  let html = '<div class="tl-doc-list">';
 
-  if (multiDoc) {
-    html += '<table class="tl-table"><thead><tr><th></th>';
-    docs.forEach(doc => {
-      const col = getDocColor(docObjs[doc]);
-      html += '<th style="border-top:3px solid ' + col.bg + '">' + doc + '</th>';
-    });
-    html += '</tr></thead><tbody>';
-    sessions.forEach(sess => {
-      html += '<tr><td class="tl-sess-name">' + sess.name + '<br><span class="tl-sess-time">'
-        + pad(sess.start/60) + ':00–' + pad(sess.end/60) + ':00</span></td>';
-      docs.forEach(doc => {
-        const ranges = freeRanges(docBusy[doc] || new Set(), sess.start, sess.end);
-        if (!ranges.length) {
-          html += '<td class="tl-cell tl-full">已約滿</td>';
-        } else {
-          html += '<td class="tl-cell">' + ranges.map(r => '<span class="tl-range">' + fmtRange(r) + '</span>').join('') + '</td>';
-        }
-      });
-      html += '</tr>';
-    });
-    html += '</tbody></table>';
+  if (!docs.length) {
+    html += '<p style="text-align:center;color:var(--text-hint);padding:24px 0;">今日尚無約診</p>';
   } else {
-    const busy = docs.length ? (docBusy[docs[0]] || new Set()) : new Set();
-    sessions.forEach(sess => {
-      const ranges = freeRanges(busy, sess.start, sess.end);
-      html += '<div class="tl-sess-block"><div class="tl-sess-title">' + sess.name
-        + ' <span class="tl-sess-time">' + pad(sess.start/60) + ':00–' + pad(sess.end/60) + ':00</span></div>'
-        + '<div class="tl-sess-slots">';
-      if (!ranges.length) {
-        html += '<span class="tl-full">已約滿</span>';
-      } else {
-        html += ranges.map(r => '<span class="tl-range">' + fmtRange(r) + '</span>').join('');
-      }
+    docs.forEach(label => {
+      const col  = getDocColor(docObjs[label]);
+      const busy = docBusy[label];
+      html += '<div class="tl-doc-block">';
+      html += '<div class="tl-doc-block-header" style="background:' + col.light + ';color:' + col.bg + ';">';
+      html += '<span class="appt-dr-dot" style="background:' + col.bg + ';"></span>' + label;
+      html += '</div>';
+      html += '<div class="tl-doc-block-body">';
+      sessions.forEach(sess => {
+        const ranges = freeRanges(busy, sess.start, sess.end);
+        const rc = rangeColor(busy, sess.start, sess.end);
+        html += '<div class="tl-sess-row">';
+        html += '<span class="tl-sess-label">' + sess.name + '</span>';
+        html += '<div class="tl-sess-ranges">';
+        if (!ranges.length) {
+          html += '<span class="tl-full">已約滿</span>';
+        } else {
+          ranges.forEach(r => {
+            html += '<span class="tl-range" style="background:' + rc.bg + ';border-color:' + rc.border + ';color:' + rc.text + ';">' + fmtRange(r) + '</span>';
+          });
+        }
+        html += '</div></div>';
+      });
       html += '</div></div>';
     });
   }
 
+  html += '</div>';
+
   document.getElementById('timelineGrid').innerHTML = html;
   document.getElementById('timelineModal').classList.add('open');
 }
-
 function closeTimeline() {
   document.getElementById('timelineModal').classList.remove('open');
 }
