@@ -1108,7 +1108,8 @@ function renderAppointments(events, container) {
     const col      = getDocColor(doc);
     const drLabel  = getDocLabel(doc);
     return `
-      <div class="appt-item" style="border-left-color:${col.bg};background:${col.light};">
+      <div class="appt-item" style="border-left-color:${col.bg};background:${col.light};"
+        onmouseenter="showApptTooltip(event,'${ev.id}')" onmouseleave="hideApptTooltip()">
         <div class="appt-time-col">
           <div class="appt-time" style="color:${col.bg};">${timeLabel}</div>
           <span class="appt-dr-tag" style="background:${col.bg};">${drLabel}</span>
