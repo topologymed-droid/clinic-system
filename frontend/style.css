@@ -1921,13 +1921,14 @@ nav.tab-bar {
 .timeline-box {
   background: var(--warm-card);
   border-radius: 14px;
-  width: 340px;
+  width: var(--tl-width, 340px);
   max-width: 95vw;
   max-height: 85vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 8px 40px rgba(0,0,0,.18);
   overflow: hidden;
+  transition: width .2s;
 }
 .timeline-header {
   display: flex;
@@ -2031,4 +2032,68 @@ nav.tab-bar {
   font-weight: 700;
   color: var(--text-sub);
   padding: 4px 2px 2px;
+}
+/* 剩餘時段表格 */
+.tl-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.tl-table thead th {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-sub);
+  padding: 6px 8px 4px;
+  border-bottom: 1px solid var(--warm-border);
+}
+.tl-table tbody tr { border-bottom: 1px solid var(--warm-border); }
+.tl-sess-name {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--teal-dark);
+  padding: 10px 10px 10px 0;
+  white-space: nowrap;
+  vertical-align: top;
+}
+.tl-sess-time {
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--text-hint);
+}
+.tl-cell {
+  padding: 10px 8px;
+  vertical-align: top;
+}
+.tl-full {
+  color: var(--text-hint);
+  font-size: 12px;
+}
+.tl-range {
+  display: inline-block;
+  background: rgba(74,155,142,.12);
+  color: var(--teal-dark);
+  border: 1px solid rgba(74,155,142,.3);
+  border-radius: 5px;
+  padding: 2px 7px;
+  font-size: 12px;
+  font-weight: 600;
+  margin: 2px 2px;
+}
+/* 單欄模式 */
+.tl-sess-block {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--warm-border);
+}
+.tl-sess-block:last-child { border-bottom: none; }
+.tl-sess-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--teal-dark);
+  margin-bottom: 8px;
+}
+.tl-sess-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }

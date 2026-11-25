@@ -982,111 +982,93 @@ function showTimeline() {
   const date = document.getElementById('date').value;
   const d = new Date(date + 'T00:00:00');
   const dateLabel = d.toLocaleDateString('zh-TW', { month:'long', day:'numeric', weekday:'short' });
-  document.getElementById('timelineTitle').textContent = dateLabel + ' 時間表';
+  document.getElementById('timelineTitle').textContent = dateLabel + ' 剩餘時段';
 
   const isToday = date === localDateStr(new Date());
   const now = new Date();
-  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const nowMins = isToday ? now.getHours() * 60 + now.getMinutes() : 0;
 
-  const SLOT_H = 22;
-  const START  = 9 * 60;  // 09:00
-  const END    = 22 * 60; // 22:00
-  const totalH = (END - START) / 15 * SLOT_H;
+  const sessions = [
+    { name: '早診', start: 9*60,  end: 12*60 },
+    { name: '午診', start: 14*60, end: 17*60 },
+    { name: '晚診', start: 18*60, end: 21*60 },
+  ];
 
-  // 收集約診，依醫師分組
-  const docMap = {}; // docName -> [{sm, em, col, patient}]
+  const docBusy = {};
   todayTimelineEvents.forEach(ev => {
     if (!ev.start?.dateTime || !ev.end?.dateTime) return;
     const s = new Date(ev.start.dateTime), e = new Date(ev.end.dateTime);
     const sm = s.getHours() * 60 + s.getMinutes();
     const em = e.getHours() * 60 + e.getMinutes();
     const doc = getDocFromSummary(ev.summary || '', ev) || '未知';
-    const col = getDocColor(doc);
-    const patient = getPatientNameFromEvent(ev);
-    if (!docMap[doc]) docMap[doc] = [];
-    docMap[doc].push({ sm, em, col, patient });
+    if (!docBusy[doc]) docBusy[doc] = new Set();
+    for (let m = sm; m < em; m += 15) docBusy[doc].add(m);
   });
 
-  const docs = Object.keys(docMap);
-  const multiDoc = docs.length > 1;
-  // 單一醫師或無約診時用單欄（顯示所有約診）
-  const colDocs = multiDoc ? docs : ['_all'];
-  const LABEL_W = 46;
+  const docs = Object.keys(docBusy);
+  const multiDoc = docs.length >= 2;
+
+  function freeRanges(busySet, start, end) {
+    const ranges = [];
+    let blockStart = null;
+    for (let m = start; m <= end; m += 15) {
+      const free = m < end && !busySet.has(m) && !(isToday && m <= nowMins);
+      if (free && blockStart === null) blockStart = m;
+      if (!free && blockStart !== null) { ranges.push([blockStart, m]); blockStart = null; }
+    }
+    return ranges;
+  }
+
+  function fmtRange([s, e]) {
+    return pad(Math.floor(s/60)) + ':' + pad(s%60) + '–' + pad(Math.floor(e/60)) + ':' + pad(e%60);
+  }
+
+  const box = document.getElementById('timelineModal').querySelector('.timeline-box');
+  box.style.setProperty('--tl-width', multiDoc
+    ? Math.min(160 + docs.length * 150, window.innerWidth * 0.93) + 'px'
+    : '340px');
 
   let html = '';
 
-  // 多醫師時顯示標題列
   if (multiDoc) {
-    html += `<div class="tl-doc-header-row" style="padding-left:${LABEL_W}px;">`;
+    html += '<table class="tl-table"><thead><tr><th></th>';
     docs.forEach(doc => {
       const col = getDocColor(doc);
-      html += `<div class="tl-doc-header" style="border-top:3px solid ${col.bg || col.border || '#888'}">${doc}</div>`;
+      html += '<th style="border-top:3px solid ' + col.bg + '">' + doc + '</th>';
     });
-    html += '</div>';
-  }
-
-  // 主體：時間標籤 + 醫師欄
-  html += `<div style="display:flex;position:relative;">`;
-
-  // 時間標籤欄
-  html += `<div style="width:${LABEL_W}px;flex-shrink:0;position:relative;height:${totalH}px;">`;
-  for (let m = START; m < END; m += 15) {
-    const h = Math.floor(m/60), min = m%60;
-    const top = (m - START) / 15 * SLOT_H;
-    const isHour = min === 0;
-    const isHalf = min === 30;
-    if (isHour || isHalf) {
-      html += `<div class="tl-label${isHour ? ' hour' : ''}" style="position:absolute;top:${top + 2}px;">${pad(h)}:${pad(min)}</div>`;
-    }
-  }
-  html += '</div>';
-
-  // 醫師欄（s）
-  colDocs.forEach(doc => {
-    const appts = doc === '_all'
-      ? Object.values(docMap).flat()
-      : (docMap[doc] || []);
-
-    html += `<div style="flex:1;position:relative;height:${totalH}px;border-left:2px solid var(--warm-border);">`;
-
-    // 背景行（整點/半點分隔線 + past 色）
-    for (let m = START; m < END; m += 15) {
-      const top = (m - START) / 15 * SLOT_H;
-      const isPast = isToday && m < nowMins;
-      const isHour = m % 60 === 0;
-      html += `<div style="position:absolute;top:${top}px;left:0;right:0;height:${SLOT_H}px;${isPast ? 'background:rgba(0,0,0,.04);' : ''}${isHour ? 'border-top:1px solid var(--warm-border);' : ''}"></div>`;
-    }
-
-    // 約診區塊
-    appts.forEach(a => {
-      const top    = (a.sm - START) / 15 * SLOT_H + 1;
-      const height = Math.max((a.em - a.sm) / 15 * SLOT_H - 2, 18);
-      const fg = a.col.text || a.col.fg || '#fff';
-      html += `<div class="tl-appt-block" style="top:${top}px;height:${height}px;background:${a.col.bg};color:${fg};">
-        <span style="font-size:10px;opacity:.8;">${pad(Math.floor(a.sm/60))}:${pad(a.sm%60)}–${pad(Math.floor(a.em/60))}:${pad(a.em%60)}</span>
-        ${height > 30 ? `<span>${a.patient}</span>` : ` ${a.patient}`}
-      </div>`;
+    html += '</tr></thead><tbody>';
+    sessions.forEach(sess => {
+      html += '<tr><td class="tl-sess-name">' + sess.name + '<br><span class="tl-sess-time">'
+        + pad(sess.start/60) + ':00–' + pad(sess.end/60) + ':00</span></td>';
+      docs.forEach(doc => {
+        const ranges = freeRanges(docBusy[doc] || new Set(), sess.start, sess.end);
+        if (!ranges.length) {
+          html += '<td class="tl-cell tl-full">已約滿</td>';
+        } else {
+          html += '<td class="tl-cell">' + ranges.map(r => '<span class="tl-range">' + fmtRange(r) + '</span>').join('') + '</td>';
+        }
+      });
+      html += '</tr>';
     });
-
-    html += '</div>';
-  });
-
-  // 現在時間線（橫跨所有醫師欄）
-  if (isToday && nowMins >= START && nowMins <= END) {
-    const top = (nowMins - START) / 15 * SLOT_H;
-    html += `<div class="tl-now-dot" style="top:${top - 3}px;left:${LABEL_W - 4}px;"></div>`;
-    html += `<div class="tl-now-line" style="top:${top}px;left:${LABEL_W}px;right:0;"></div>`;
+    html += '</tbody></table>';
+  } else {
+    const busy = docs.length ? (docBusy[docs[0]] || new Set()) : new Set();
+    sessions.forEach(sess => {
+      const ranges = freeRanges(busy, sess.start, sess.end);
+      html += '<div class="tl-sess-block"><div class="tl-sess-title">' + sess.name
+        + ' <span class="tl-sess-time">' + pad(sess.start/60) + ':00–' + pad(sess.end/60) + ':00</span></div>'
+        + '<div class="tl-sess-slots">';
+      if (!ranges.length) {
+        html += '<span class="tl-full">已約滿</span>';
+      } else {
+        html += ranges.map(r => '<span class="tl-range">' + fmtRange(r) + '</span>').join('');
+      }
+      html += '</div></div>';
+    });
   }
-
-  html += '</div>'; // flex body
 
   document.getElementById('timelineGrid').innerHTML = html;
   document.getElementById('timelineModal').classList.add('open');
-
-  if (isToday && nowMins >= START) {
-    const scrollTop = Math.max(0, (nowMins - START) / 15 * SLOT_H - 100);
-    setTimeout(() => { document.getElementById('timelineScroll').scrollTop = scrollTop; }, 50);
-  }
 }
 
 function closeTimeline() {
