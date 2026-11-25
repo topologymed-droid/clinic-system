@@ -1025,13 +1025,14 @@ function showTimeline() {
   }
 
   function rangeColor(busySet, start, end) {
-    const total = (end - start) / 15;
-    let pastOrBusy = 0;
+    let available = 0, busy = 0;
     for (let m = start; m < end; m += 15) {
-      if (busySet.has(m) || (isToday && m <= nowMins)) pastOrBusy++;
+      if (isToday && m <= nowMins) continue; // 略過已過時段
+      available++;
+      if (busySet.has(m)) busy++;
     }
-    const freeCount = total - pastOrBusy;
-    const ratio = freeCount / total;
+    if (available === 0) return { bg: 'rgba(0,0,0,.04)', border: 'rgba(0,0,0,.1)', text: 'var(--text-hint)' };
+    const ratio = (available - busy) / available;
     if (ratio <= 1/3) return { bg: 'rgba(220,53,53,.12)', border: 'rgba(220,53,53,.4)', text: '#c0392b' };
     if (ratio <= 1/2) return { bg: 'rgba(230,160,0,.12)', border: 'rgba(230,160,0,.4)', text: '#a07000' };
     return { bg: 'rgba(74,155,142,.12)', border: 'rgba(74,155,142,.3)', text: 'var(--teal-dark)' };
