@@ -135,19 +135,33 @@ def load_patients():
     if not os.path.exists(PATIENTS_FILE):
         return {}
     with open(PATIENTS_FILE, 'r', encoding='utf-8') as f:
-        return json.load(f)
+        raw = json.load(f)
+    # 向下相容：舊格式值為字串 → 轉成 dict
+    result = {}
+    for k, v in raw.items():
+        if isinstance(v, str):
+            result[k] = {"doctor": v, "visit_type": "複診"}
+        else:
+            result[k] = v
+    return result
 
 def save_patients(patients):
     with open(PATIENTS_FILE, 'w', encoding='utf-8') as f:
         json.dump(patients, f, ensure_ascii=False, indent=2)
     sync_to_github(PATIENTS_FILE)
 
-def update_patient_doctor(patient_name: str, doctor: str):
-    """記憶患者對應醫師"""
+def update_patient_doctor(patient_name: str, doctor: str, visit_type: str = None):
+    """記憶患者對應醫師與就診類型"""
     if not patient_name or not doctor:
         return
     patients = load_patients()
-    patients[patient_name.strip()] = doctor.strip()
+    existing = patients.get(patient_name.strip(), {})
+    if isinstance(existing, str):
+        existing = {"doctor": existing, "visit_type": "複診"}
+    existing["doctor"] = doctor.strip()
+    if visit_type:
+        existing["visit_type"] = visit_type.strip()
+    patients[patient_name.strip()] = existing
     save_patients(patients)
 
 # ─── Default Doctors ──────────────────────────────────────────────────────────
@@ -459,14 +473,21 @@ def suggest_patients(q: str):
 def lookup_patient(name: str):
     patients = load_patients()
     name = name.strip()
+    def fmt(info, matched_name=None):
+        d = info.get("doctor") if isinstance(info, dict) else info
+        vt = info.get("visit_type", "複診") if isinstance(info, dict) else "複診"
+        r = {"doctor": d, "visit_type": vt}
+        if matched_name:
+            r["matched_name"] = matched_name
+        return r
     # 完全符合
     if name in patients:
-        return {"doctor": patients[name]}
+        return fmt(patients[name])
     # 部分符合
-    for pname, doctor in patients.items():
+    for pname, info in patients.items():
         if name in pname or pname in name:
-            return {"doctor": doctor, "matched_name": pname}
-    return {"doctor": None}
+            return fmt(info, pname)
+    return {"doctor": None, "visit_type": None}
 
 # ─── Appointment Routes ───────────────────────────────────────────────────────
 @app.post("/api/appointments")
@@ -477,7 +498,7 @@ def create_appointment(appt: AppointmentCreate):
         start_dt = datetime.strptime(f"{appt.date} {appt.start_time}", "%Y-%m-%d %H:%M")
         end_dt   = datetime.strptime(f"{appt.date} {appt.end_time}",   "%Y-%m-%d %H:%M")
 
-        update_patient_doctor(appt.patient_name, appt.doctor)
+        update_patient_doctor(appt.patient_name, appt.doctor, appt.visit_type)
         event = {
             'summary': event_summary(appt.doctor, appt.patient_name, appt.visit_type, appt.complaint, appt.booker or ''),
             'description': (
@@ -697,7 +718,7 @@ def update_appointment(event_id: str, update: AppointmentUpdate):
                 patch_body['description'] = new_desc
 
                 if doctor:
-                    update_patient_doctor(update.patient_name, doctor)
+                    update_patient_doctor(update.patient_name, doctor, update.visit_type)
 
             if doctor and new_cal_id != found_cal_id:
                 # 跨日曆：用完整 ev + patch_body 的欄位建立新事件

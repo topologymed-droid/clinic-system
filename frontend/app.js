@@ -798,6 +798,11 @@ async function lookupPatientDoctor(name) {
     const data = await res.json();
     if (data.doctor) {
       showPatientHint(data.doctor, data.matched_name);
+      // 自動套用就診類型（只有複診才覆寫，初診才是例外）
+      if (data.visit_type) {
+        const radios = document.querySelectorAll('input[name="visitType"]');
+        radios.forEach(r => { r.checked = (r.value === data.visit_type); });
+      }
     } else {
       hidePatientHint();
     }
