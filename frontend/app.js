@@ -994,15 +994,17 @@ function showTimeline() {
     { name: '晚診', start: 18*60, end: 21*60 },
   ];
 
-  const docBusy = {};
+  const docBusy = {};   // label -> Set<mins>
+  const docObjs = {};   // label -> doctor object (for color)
   todayTimelineEvents.forEach(ev => {
     if (!ev.start?.dateTime || !ev.end?.dateTime) return;
     const s = new Date(ev.start.dateTime), e = new Date(ev.end.dateTime);
     const sm = s.getHours() * 60 + s.getMinutes();
     const em = e.getHours() * 60 + e.getMinutes();
-    const doc = getDocFromSummary(ev.summary || '', ev) || '未知';
-    if (!docBusy[doc]) docBusy[doc] = new Set();
-    for (let m = sm; m < em; m += 15) docBusy[doc].add(m);
+    const docObj = getDocFromSummary(ev.summary || '', ev);
+    const label  = docObj ? getDocLabel(docObj) : '未知';
+    if (!docBusy[label]) { docBusy[label] = new Set(); docObjs[label] = docObj; }
+    for (let m = sm; m < em; m += 15) docBusy[label].add(m);
   });
 
   const docs = Object.keys(docBusy);
@@ -1033,7 +1035,7 @@ function showTimeline() {
   if (multiDoc) {
     html += '<table class="tl-table"><thead><tr><th></th>';
     docs.forEach(doc => {
-      const col = getDocColor(doc);
+      const col = getDocColor(docObjs[doc]);
       html += '<th style="border-top:3px solid ' + col.bg + '">' + doc + '</th>';
     });
     html += '</tr></thead><tbody>';
