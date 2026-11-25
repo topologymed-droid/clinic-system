@@ -594,13 +594,14 @@ def get_appointments_range(start: str, end: str):
 def search_appointments(q: str):
     try:
         service  = get_calendar_service()
-        # 全部時間：從 2000 年到 2099 年
-        time_min = "2000-01-01T00:00:00+08:00"
-        time_max = "2099-12-31T23:59:59+08:00"
+        from datetime import timezone, timedelta
+        tz8 = timezone(timedelta(hours=8))
+        now  = datetime.now(tz8)
+        time_min = (now - timedelta(days=365*2)).strftime("%Y-%m-%dT00:00:00+08:00")
+        time_max = (now + timedelta(days=365)).strftime("%Y-%m-%dT23:59:59+08:00")
 
         all_events = []
         for cal_id in [CALENDAR_MAIN, CALENDAR_SU]:
-            # Google Calendar API 分頁抓取
             page_token = None
             while True:
                 result = service.events().list(
@@ -609,19 +610,20 @@ def search_appointments(q: str):
                     timeMax=time_max,
                     singleEvents=True,
                     orderBy='startTime',
-                    q=q,
                     pageToken=page_token,
-                    maxResults=500,
+                    maxResults=2500,
                 ).execute()
                 for ev in result.get('items', []):
-                    ev['_isSuCalendar'] = (cal_id == CALENDAR_SU)
-                    all_events.append(ev)
+                    # 本地子字串過濾（支援中文多字搜尋）
+                    text = (ev.get('summary','') + ev.get('description','')).lower()
+                    if q.lower() in text:
+                        ev['_isSuCalendar'] = (cal_id == CALENDAR_SU)
+                        all_events.append(ev)
                 page_token = result.get('nextPageToken')
                 if not page_token:
                     break
 
         all_events.sort(key=lambda e: e.get('start', {}).get('dateTime', e.get('start', {}).get('date', '')))
-        # 同時回傳該關鍵字的異動紀錄
         history = load_history()
         matched_history = [h for h in history if q in h.get('summary', '')]
         return {"events": all_events, "history": matched_history}
