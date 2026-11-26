@@ -2,10 +2,10 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --teal:       #3a6b5e;
-  --teal-dark:  #274d43;
-  --teal-light: #eef6f2;
-  --teal-mid:   #a8ccbf;
+  --teal:       #c8aa78;
+  --teal-dark:  #7a5a20;
+  --teal-light: #fdf6ea;
+  --teal-mid:   #ddc48e;
   --warm-bg:    #fdf9f4;
   --warm-card:  #ffffff;
   --warm-beige: #f7f0e6;
@@ -16,8 +16,8 @@
   --text-main:  #2e2820;
   --text-sub:   #786860;
   --text-hint:  #b0a090;
-  --green-soft: #edf6f0;
-  --green:      #3a7a52;
+  --green-soft: #fdf6ea;
+  --green:      #a08030;
   --red-soft:   #fdf0ef;
   --red:        #b84c44;
   --radius:     10px;
@@ -36,13 +36,13 @@ body {
 
 /* ─── Header ───────────────────────────────────────────────────────────────── */
 .header {
-  background: linear-gradient(135deg, #1e3d34 0%, var(--teal-dark) 45%, var(--teal) 100%);
+  background: linear-gradient(135deg, #3d2a08 0%, var(--teal-dark) 45%, var(--teal) 100%);
   color: white;
   padding: 14px 32px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 16px rgba(30,61,52,.28);
+  box-shadow: 0 2px 16px rgba(60,42,10,.28);
   position: sticky;
   top: 0;
   z-index: 100;
