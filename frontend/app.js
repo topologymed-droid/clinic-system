@@ -871,13 +871,14 @@ function renderBookerChips() {
   bookersList.forEach(b => {
     const chip = document.createElement('div');
     chip.className = 'booker-chip' + (selectedBooker === b.name ? ' active' : '');
-
-    const label = document.createElement('span');
-    label.textContent = b.name;
-    label.onclick = () => {
+    chip.style.cursor = 'pointer';
+    chip.onclick = () => {
       selectedBooker = selectedBooker === b.name ? '' : b.name;
       renderBookerChips();
     };
+
+    const label = document.createElement('span');
+    label.textContent = b.name;
 
     const x = document.createElement('span');
     x.className = 'booker-chip-x';
