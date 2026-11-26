@@ -554,14 +554,29 @@ async function fetchComplaintPresets() {
 function renderComplaintShortcuts(textareaId, containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
+  const editMode = container.dataset.editMode === '1';
 
   container.innerHTML = '';
 
-  // 快捷標籤
-  const labelEl = document.createElement('div');
+  // 標題列：快捷主訴 + 編輯/完成
+  const headerRow = document.createElement('div');
+  headerRow.className = 'complaint-header-row';
+
+  const labelEl = document.createElement('span');
   labelEl.className = 'complaint-shortcuts-label';
-  labelEl.textContent = '快捷主訴：';
-  container.appendChild(labelEl);
+  labelEl.textContent = '快捷主訴';
+  headerRow.appendChild(labelEl);
+
+  const toggleBtn = document.createElement('button');
+  toggleBtn.type = 'button';
+  toggleBtn.className = editMode ? 'complaint-chip-add complaint-chip-edit-active' : 'complaint-chip-add';
+  toggleBtn.textContent = editMode ? '完成' : '✏ 編輯';
+  toggleBtn.onclick = () => {
+    container.dataset.editMode = editMode ? '0' : '1';
+    renderAllComplaintShortcuts();
+  };
+  headerRow.appendChild(toggleBtn);
+  container.appendChild(headerRow);
 
   // 快捷 chips
   const chipsRow = document.createElement('div');
@@ -569,42 +584,39 @@ function renderComplaintShortcuts(textareaId, containerId) {
 
   complaintPresets.forEach(p => {
     const chip = document.createElement('div');
-    chip.className = 'complaint-chip';
+    chip.className = 'complaint-chip' + (editMode ? ' complaint-chip-editing' : '');
     chip.dataset.id = p.id;
     chip.style.cursor = 'pointer';
-    chip.onclick = () => insertComplaint(textareaId, p.text);
 
     const label = document.createElement('span');
     label.className = 'complaint-chip-label';
     label.textContent = p.text;
     label.title = p.text;
-
-    const editBtn = document.createElement('button');
-    editBtn.type = 'button';
-    editBtn.className = 'complaint-chip-edit';
-    editBtn.innerHTML = '<i class="fa-solid fa-pen"></i>';
-    editBtn.title = '編輯';
-    editBtn.onclick = (e) => { e.stopPropagation(); startEditComplaint(chip, p, textareaId, containerId); };
-
-    const delBtn = document.createElement('button');
-    delBtn.type = 'button';
-    delBtn.className = 'complaint-chip-del';
-    delBtn.textContent = '✕';
-    delBtn.title = '刪除';
-    delBtn.onclick = async (e) => {
-      e.stopPropagation();
-      await fetch(`${API}/api/complaints/${p.id}`, { method: 'DELETE' });
-      complaintPresets = complaintPresets.filter(c => c.id !== p.id);
-      renderAllComplaintShortcuts();
-    };
-
     chip.appendChild(label);
-    chip.appendChild(editBtn);
-    chip.appendChild(delBtn);
+
+    if (editMode) {
+      chip.onclick = () => startEditComplaint(chip, p, textareaId, containerId);
+
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'complaint-chip-del';
+      delBtn.textContent = '✕';
+      delBtn.title = '刪除';
+      delBtn.onclick = async (e) => {
+        e.stopPropagation();
+        await fetch(`${API}/api/complaints/${p.id}`, { method: 'DELETE' });
+        complaintPresets = complaintPresets.filter(c => c.id !== p.id);
+        renderAllComplaintShortcuts();
+      };
+      chip.appendChild(delBtn);
+    } else {
+      chip.onclick = () => insertComplaint(textareaId, p.text);
+    }
+
     chipsRow.appendChild(chip);
   });
 
-  // 新增按鈕
+  // 新增按鈕放 chips 列尾
   const addBtn = document.createElement('button');
   addBtn.type = 'button';
   addBtn.className = 'complaint-chip-add';
