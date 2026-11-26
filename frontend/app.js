@@ -571,12 +571,13 @@ function renderComplaintShortcuts(textareaId, containerId) {
     const chip = document.createElement('div');
     chip.className = 'complaint-chip';
     chip.dataset.id = p.id;
+    chip.style.cursor = 'pointer';
+    chip.onclick = () => insertComplaint(textareaId, p.text);
 
     const label = document.createElement('span');
     label.className = 'complaint-chip-label';
     label.textContent = p.text;
     label.title = p.text;
-    label.onclick = () => insertComplaint(textareaId, p.text);
 
     const editBtn = document.createElement('button');
     editBtn.type = 'button';
@@ -1533,6 +1534,26 @@ function editAppointment(eventId) {
   // 渲染約診者 chips
   renderEditBookerChips();
   renderComplaintShortcuts('editComplaint', 'editComplaintShortcuts');
+
+  // 醫師選單上色
+  const editSel = document.getElementById('editDoctor');
+  function applyEditDoctorColor() {
+    const found = doctorsList.find(d => d.name === editSel.value);
+    if (found) {
+      const col = getDocColor(found);
+      editSel.style.background = col.light;
+      editSel.style.borderColor = col.bg;
+      editSel.style.color = col.bg;
+      editSel.style.fontWeight = '700';
+    } else {
+      editSel.style.background = '';
+      editSel.style.borderColor = '';
+      editSel.style.color = '';
+      editSel.style.fontWeight = '';
+    }
+  }
+  editSel.onchange = applyEditDoctorColor;
+  applyEditDoctorColor();
 
   document.getElementById('successModal').classList.add('open');
 }
