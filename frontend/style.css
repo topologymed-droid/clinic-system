@@ -2,10 +2,10 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --teal:       #c8aa78;
-  --teal-dark:  #7a5a20;
-  --teal-light: #fdf6ea;
-  --teal-mid:   #ddc48e;
+  --teal:       #1a3050;
+  --teal-dark:  #0b1829;
+  --teal-light: #edf2f8;
+  --teal-mid:   #8aaccf;
   --warm-bg:    #fdf9f4;
   --warm-card:  #ffffff;
   --warm-beige: #f7f0e6;
@@ -16,8 +16,8 @@
   --text-main:  #2e2820;
   --text-sub:   #786860;
   --text-hint:  #b0a090;
-  --green-soft: #fdf6ea;
-  --green:      #a08030;
+  --green-soft: #edf2f8;
+  --green:      #1a3050;
   --red-soft:   #fdf0ef;
   --red:        #b84c44;
   --radius:     10px;
@@ -36,13 +36,13 @@ body {
 
 /* ─── Header ───────────────────────────────────────────────────────────────── */
 .header {
-  background: linear-gradient(135deg, #3d2a08 0%, var(--teal-dark) 45%, var(--teal) 100%);
+  background: linear-gradient(135deg, #0b1829 0%, #0f2040 45%, #1a3050 100%);
   color: white;
   padding: 14px 32px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 16px rgba(60,42,10,.28);
+  box-shadow: 0 2px 16px rgba(11,24,41,.4);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -252,7 +252,7 @@ textarea { resize: vertical; min-height: 76px; }
 /* ─── Buttons ──────────────────────────────────────────────────────────────── */
 .btn-primary {
   background: linear-gradient(135deg, var(--teal) 0%, var(--teal-dark) 100%);
-  color: white;
+  color: #f0dcaa;
   border: none;
   border-radius: 10px;
   font-size: 14px;
@@ -261,7 +261,7 @@ textarea { resize: vertical; min-height: 76px; }
   cursor: pointer;
   transition: filter .15s, transform .1s;
   letter-spacing: .3px;
-  box-shadow: 0 3px 12px rgba(39,77,67,.28);
+  box-shadow: 0 3px 12px rgba(11,24,41,.32);
 }
 .btn-primary:hover   { filter: brightness(1.07); transform: translateY(-1px); }
 .btn-primary:active  { transform: translateY(0); }
@@ -277,7 +277,7 @@ textarea { resize: vertical; min-height: 76px; }
 .btn-success {
   padding: 10px 16px;
   background: var(--green);
-  color: white;
+  color: #f0dcaa;
   border: none;
   border-radius: 9px;
   font-size: 13px;
@@ -286,7 +286,7 @@ textarea { resize: vertical; min-height: 76px; }
   cursor: pointer;
   white-space: nowrap;
   transition: filter .15s;
-  box-shadow: 0 2px 8px rgba(61,158,110,.25);
+  box-shadow: 0 2px 8px rgba(11,24,41,.28);
 }
 .btn-success:hover { filter: brightness(1.08); }
 
@@ -320,7 +320,7 @@ textarea { resize: vertical; min-height: 76px; }
   justify-content: center;
   transition: background .15s, border-color .15s;
 }
-.btn-print:hover { background: #edf7f5; border-color: var(--teal); color: var(--teal); }
+.btn-print:hover { background: var(--teal-light); border-color: var(--teal); color: var(--teal); }
 
 .print-doc-list {
   display: flex;
@@ -850,7 +850,7 @@ textarea { resize: vertical; min-height: 76px; }
 /* ─── Tab Bar ──────────────────────────────────────────────────────────────── */
 nav.tab-bar {
   background: var(--teal-dark);
-  box-shadow: 0 1px 0 rgba(255,255,255,.06), 0 2px 8px rgba(30,61,52,.18);
+  box-shadow: 0 1px 0 rgba(255,255,255,.06), 0 2px 8px rgba(11,24,41,.3);
 }
 .tab-bar {
   display: flex;
@@ -880,8 +880,8 @@ nav.tab-bar {
 .tab i { font-size: 14px; }
 .tab:hover { color: rgba(255,255,255,.9); background: rgba(255,255,255,.06); }
 .tab.active {
-  color: #fff;
-  border-bottom-color: #a8ccbf;
+  color: #f0dcaa;
+  border-bottom-color: #c8aa78;
   background: rgba(255,255,255,.08);
   font-weight: 600;
 }
