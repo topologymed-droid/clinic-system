@@ -894,14 +894,15 @@ function renderBookerChips() {
   if (!container) return;
   container.innerHTML = '';
 
-  // Header row: label + 編輯/完成 toggle
-  const headerRow = document.createElement('div');
-  headerRow.className = 'complaint-header-row';
-
+  // Label row
   const labelEl = document.createElement('span');
   labelEl.className = 'complaint-shortcuts-label';
   labelEl.textContent = '約診者';
-  headerRow.appendChild(labelEl);
+  container.appendChild(labelEl);
+
+  // Edit toggle button on next line, centered
+  const toggleRow = document.createElement('div');
+  toggleRow.className = 'booker-edit-btn-row';
 
   const toggleBtn = document.createElement('button');
   toggleBtn.type = 'button';
@@ -911,8 +912,8 @@ function renderBookerChips() {
     bookerEditMode = !bookerEditMode;
     renderBookerChips();
   };
-  headerRow.appendChild(toggleBtn);
-  container.appendChild(headerRow);
+  toggleRow.appendChild(toggleBtn);
+  container.appendChild(toggleRow);
 
   // Chips row
   const chipsRow = document.createElement('div');

@@ -1337,9 +1337,14 @@ nav.tab-bar {
 /* ─── Booker Chips ───────────────────────────────────────────────────────────── */
 .booker-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-direction: column;
+  gap: 6px;
   margin-bottom: 8px;
+}
+.booker-edit-btn-row {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 4px;
 }
 
 /* ─── Complaint Shortcuts (快捷主訴) ─────────────────────────────────────── */
