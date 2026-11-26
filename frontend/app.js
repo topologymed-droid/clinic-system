@@ -377,17 +377,28 @@ function renderDoctorSelect() {
     o.value = d.name; o.textContent = d.name;
     sel.appendChild(o);
   });
-  sel.onchange = () => {
+  function applyDoctorSelectColor() {
     const found = doctorsList.find(d => d.name === sel.value);
     const badge = document.getElementById('doctorNote');
     const text  = document.getElementById('doctorNoteText');
-    if (found && found.note) {
-      text.textContent = found.note;
-      badge.style.display = 'flex';
+    if (found) {
+      const col = getDocColor(found);
+      sel.style.background = col.light;
+      sel.style.borderColor = col.bg;
+      sel.style.color = col.bg;
+      sel.style.fontWeight = '700';
+      if (found.note) { text.textContent = found.note; badge.style.display = 'flex'; }
+      else { badge.style.display = 'none'; }
     } else {
+      sel.style.background = '';
+      sel.style.borderColor = '';
+      sel.style.color = '';
+      sel.style.fontWeight = '';
       badge.style.display = 'none';
     }
-  };
+  }
+  sel.onchange = applyDoctorSelectColor;
+  applyDoctorSelectColor();
 }
 
 function renderDoctorsPanel() {
