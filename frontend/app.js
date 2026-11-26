@@ -996,9 +996,12 @@ async function loadAppointments() {
 function updateRemainingSlots(events, date) {
   const bar = document.getElementById('remainingSlotsBar');
   if (!bar) return;
-  const isToday = date === localDateStr(new Date());
+  const todayStr = localDateStr(new Date());
   const now = new Date();
-  const nowMins = isToday ? now.getHours() * 60 + now.getMinutes() : 0;
+  const nowMins = date < todayStr ? 24 * 60      // 過去日期：全天都過了
+                : date > todayStr ? 0             // 未來日期：都還沒到
+                : now.getHours() * 60 + now.getMinutes(); // 今天：當前時間
+  const isToday = date === todayStr;
 
   // 診所開診時段：早診 09–12、午診 14–17、晚診 18–21
   const clinicRanges = [[9*60, 12*60], [14*60, 17*60], [18*60, 21*60]];
@@ -1019,11 +1022,11 @@ function updateRemainingSlots(events, date) {
     for (let m = sm; m < em; m += 15) busy.add(m);
   });
 
-  // 剩餘時段（今日才算現在之後；非今日全部算）
+  // 剩餘時段：排除已過時間 + 已被預約的時間
   const freeSlots = all.filter(t => {
     const [h, m] = t.split(':').map(Number);
     const mins = h * 60 + m;
-    if (isToday && mins <= nowMins) return false;
+    if (mins <= nowMins) return false;
     return !busy.has(mins);
   });
 
@@ -1043,9 +1046,11 @@ function showTimeline() {
   const dateLabel = d.toLocaleDateString('zh-TW', { month:'long', day:'numeric', weekday:'short' });
   document.getElementById('timelineTitle').textContent = dateLabel + ' 剩餘時段';
 
-  const isToday = date === localDateStr(new Date());
+  const todayStr2 = localDateStr(new Date());
   const now = new Date();
-  const nowMins = isToday ? now.getHours() * 60 + now.getMinutes() : 0;
+  const nowMins = date < todayStr2 ? 24 * 60
+                : date > todayStr2 ? 0
+                : now.getHours() * 60 + now.getMinutes();
 
   const sessions = [
     { name: '早診', start: 9*60,  end: 12*60 },
@@ -1072,7 +1077,7 @@ function showTimeline() {
     const ranges = [];
     let blockStart = null;
     for (let m = start; m <= end; m += 15) {
-      const free = m < end && !busySet.has(m) && !(isToday && m <= nowMins);
+      const free = m < end && !busySet.has(m) && !(m <= nowMins);
       if (free && blockStart === null) blockStart = m;
       if (!free && blockStart !== null) { ranges.push([blockStart, m]); blockStart = null; }
     }
@@ -1086,7 +1091,7 @@ function showTimeline() {
   function rangeColor(busySet, start, end) {
     let available = 0, busy = 0;
     for (let m = start; m < end; m += 15) {
-      if (isToday && m <= nowMins) continue; // 略過已過時段
+      if (m <= nowMins) continue; // 略過已過時段
       available++;
       if (busySet.has(m)) busy++;
     }
