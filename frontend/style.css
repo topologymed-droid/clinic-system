@@ -2126,8 +2126,9 @@ nav.tab-bar {
   vertical-align: top;
 }
 .tl-full {
-  color: var(--text-hint);
+  color: var(--red);
   font-size: 12px;
+  font-weight: 700;
 }
 .tl-range {
   display: inline-block;
