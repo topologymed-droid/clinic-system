@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>雅言牙醫診所 — 約診系統</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="manifest" href="/manifest.json" />
@@ -307,6 +307,7 @@
 </div>
 
 <div id="apptTooltip" class="appt-tooltip" style="display:none;"></div>
+<iframe id="printFrame" style="position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:none;" tabindex="-1" aria-hidden="true"></iframe>
 <script src="app.js"></script>
 <script>
   if ('serviceWorker' in navigator) {

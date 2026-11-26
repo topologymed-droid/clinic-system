@@ -2535,9 +2535,11 @@ function doPrint(date) {
   const html = buildPrintHtml(date, window._printEvents || [], filterDocs);
   if (!html) return;
   closeModal();
-  const w = window.open('', '_blank');
-  w.document.write(html);
-  w.document.close();
+  const iframe = document.getElementById('printFrame');
+  iframe.contentDocument.open();
+  iframe.contentDocument.write(html);
+  iframe.contentDocument.close();
+  setTimeout(() => { iframe.contentWindow.focus(); iframe.contentWindow.print(); }, 400);
 }
 
 // 新增約診頁面的列印按鈕
