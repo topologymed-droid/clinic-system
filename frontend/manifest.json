@@ -1,6 +1,6 @@
 {
-  "name": "雅言牙醫診所 約診系統",
-  "short_name": "雅言約診",
+  "name": "雅言約診系統",
+  "short_name": "雅言約診系統",
   "description": "雅言牙醫診所約診管理系統",
   "start_url": "/",
   "display": "standalone",
