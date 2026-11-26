@@ -63,6 +63,7 @@ let doctorsList       = [];
 let complaintPresets  = [];
 let bookersList       = [];
 let selectedBooker    = '';
+let bookerEditMode    = false;
 let editSelectedBooker = '';
 let allPatientNames   = [];
 let patientLookupTimer = null;
@@ -892,28 +893,60 @@ function renderBookerChips() {
   const container = document.getElementById('bookerChips');
   if (!container) return;
   container.innerHTML = '';
+
+  // Header row: label + 編輯/完成 toggle
+  const headerRow = document.createElement('div');
+  headerRow.className = 'complaint-header-row';
+
+  const labelEl = document.createElement('span');
+  labelEl.className = 'complaint-shortcuts-label';
+  labelEl.textContent = '約診者';
+  headerRow.appendChild(labelEl);
+
+  const toggleBtn = document.createElement('button');
+  toggleBtn.type = 'button';
+  toggleBtn.className = bookerEditMode ? 'complaint-chip-add complaint-chip-edit-active' : 'complaint-chip-add';
+  toggleBtn.textContent = bookerEditMode ? '完成' : '✏ 編輯';
+  toggleBtn.onclick = () => {
+    bookerEditMode = !bookerEditMode;
+    renderBookerChips();
+  };
+  headerRow.appendChild(toggleBtn);
+  container.appendChild(headerRow);
+
+  // Chips row
+  const chipsRow = document.createElement('div');
+  chipsRow.className = 'complaint-chips-row';
+
   bookersList.forEach(b => {
     const chip = document.createElement('div');
-    chip.className = 'booker-chip' + (selectedBooker === b.name ? ' active' : '');
+    chip.className = 'booker-chip' + (selectedBooker === b.name ? ' active' : '') + (bookerEditMode ? ' complaint-chip-editing' : '');
     chip.style.cursor = 'pointer';
-    chip.onclick = () => {
-      selectedBooker = selectedBooker === b.name ? '' : b.name;
-      renderBookerChips();
-    };
 
     const label = document.createElement('span');
     label.textContent = b.name;
-
-    const x = document.createElement('span');
-    x.className = 'booker-chip-x';
-    x.textContent = '✕';
-    x.title = '移除';
-    x.onclick = e => { e.stopPropagation(); deleteBooker(b.id, b.name); };
-
     chip.appendChild(label);
-    chip.appendChild(x);
-    container.appendChild(chip);
+
+    if (bookerEditMode) {
+      chip.onclick = null;
+      const x = document.createElement('button');
+      x.type = 'button';
+      x.className = 'complaint-chip-del';
+      x.textContent = '✕';
+      x.title = '移除';
+      x.onclick = e => { e.stopPropagation(); deleteBooker(b.id, b.name); };
+      chip.appendChild(x);
+    } else {
+      chip.onclick = () => {
+        selectedBooker = selectedBooker === b.name ? '' : b.name;
+        renderBookerChips();
+      };
+    }
+
+    chipsRow.appendChild(chip);
   });
+
+  container.appendChild(chipsRow);
 }
 
 async function addBooker() {
